@@ -28,7 +28,7 @@ bool _isValidImageFile(List<int> bytes) {
   // GIF: 47 49 46 38
   if (header[0] == 0x47 && header[1] == 0x49 && header[2] == 0x46) return true;
 
-  // WebP: 52 49 46 46 (RIFF) at bytes 0-3 and 57 45 42 50 (WEBP) at bytes 8-11
+  // WebP: 52 49 46 46 (RIFF) at bytes 0-3 and 57 45 42 50 (WEBB) at bytes 8-11
   if (bytes.length >= 12 &&
       bytes[0] == 0x52 && // 'R'
       bytes[1] == 0x49 && // 'I'
