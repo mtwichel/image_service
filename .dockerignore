@@ -1,0 +1,71 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+
+# Build artifacts
+build/
+.dart_tool/
+
+# Test files and coverage
+test/
+coverage/
+*.test.dart
+*_test.dart
+
+# Documentation
+README.md
+LICENSE
+*.md
+docs/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Data and uploads (don't include existing images in build)
+data/
+
+# Docker files (no need to copy these into the image)
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Logs
+*.log
+logs/
+
+# Cache directories
+.pub-cache/
+.packages
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS-specific files
+Thumbs.db
+desktop.ini
+
+# Backup files
+*.bak
+*.backup
+
+# Analysis and linting cache
+.analysis-options-cache
+
+
+image_service_client/
