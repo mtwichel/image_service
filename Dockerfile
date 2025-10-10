@@ -30,14 +30,6 @@ FROM scratch
 # This includes the necessary C libraries that the compiled binary needs
 COPY --from=build /runtime/ /
 
-# Copy CA certificates for HTTPS requests (if needed)
-COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-
-# Copy passwd/group files for non-root user support
-# The Dart runtime includes these in /runtime/
-COPY --from=build /runtime/etc/passwd /etc/passwd
-COPY --from=build /runtime/etc/group /etc/group
-
 # Copy the compiled binary
 COPY --from=build /app/build/bin/server /app/bin/server
 
