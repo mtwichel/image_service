@@ -1,0 +1,30 @@
+@media (max-width: 768px) {
+  .mobile-table table, .mobile-table thead, .mobile-table tbody, .mobile-table th, .mobile-table td, .mobile-table tr {
+    display: block;
+  }
+  
+  .mobile-table thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+  
+  .mobile-table tr {
+    border: 1px solid #ccc !important;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    background: white;
+  }
+  
+  .mobile-table td {
+    border: none !important;
+    padding: 0.5rem 0 !important;
+  }
+  
+  .mobile-table td:before {
+    content: attr(data-label) ": ";
+    font-weight: bold;
+    color: #3b82f6;
+  }
+}

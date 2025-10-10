@@ -1,0 +1,22 @@
+{
+  "version": "0.2",
+  "ignorePaths": [],
+  "dictionaryDefinitions": [],
+  "dictionaries": [],
+  "words": [
+    "afterbegin",
+    "aquasecurity",
+    "Buildx",
+    "COOLDOWN",
+    "cves",
+    "Fastly",
+    "HTMX",
+    "mocktail",
+    "pubspec",
+    "sarif",
+    "webp"
+  ],
+  "ignoreWords": [],
+  "import": [],
+  "useGitignore": true
+}
