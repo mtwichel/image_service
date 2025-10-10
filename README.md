@@ -9,9 +9,10 @@ A high-performance image storage and serving service built with Dart and Dart Fr
 - 🎨 **Image Transformation** - On-the-fly image resizing and quality adjustment
 - 📊 **Web Dashboard** - Modern, responsive UI for managing images
 - 🚀 **High Performance** - Built-in caching headers and optimized delivery
-- 🐳 **Docker Ready** - Production-ready Dockerfile included
+- 🐳 **Docker Ready** - Production-ready Dockerfile included with pre-built images
 - 🔄 **CORS Support** - Cross-origin requests enabled for easy integration
 - 📝 **Metadata Storage** - Preserves original filenames with secure storage
+- 📦 **Client Library** - Official Dart client library available on [pub.dev](https://pub.dev/packages/image_service_client)
 
 ## Prerequisites
 
@@ -98,6 +99,33 @@ dart run build/bin/server.dart
 
 ### Using Docker
 
+#### Using Pre-built Image
+
+Pull and run the official Docker image from GitHub Container Registry:
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/mtwichel/image_service:latest
+
+# Run the container
+docker run -d \
+  -p 8080:8080 \
+  -e SECRET_KEY=your-secret-api-key \
+  -e CACHE_TIME=604800 \
+  -v $(pwd)/data:/app/data \
+  --name image_service \
+  ghcr.io/mtwichel/image_service:latest
+```
+
+Pre-built images are available for:
+
+- `linux/amd64`
+- `linux/arm64`
+
+See all available tags at [GitHub Packages](https://github.com/mtwichel/image_service/pkgs/container/image_service).
+
+#### Building Locally
+
 Build and run using Docker:
 
 ```bash
@@ -115,6 +143,44 @@ docker run -d \
 ```
 
 **Note:** Mount the `data` directory as a volume to persist images between container restarts.
+
+## Client Library
+
+A Dart client library is available for easy integration with your Dart and Flutter applications.
+
+### Installation
+
+Add to your `pubspec.yaml`:
+
+```yaml
+dependencies:
+  image_service_client: ^0.0.1-dev.1
+```
+
+### Quick Example
+
+```dart
+import 'package:image_service_client/image_service_client.dart';
+
+final client = ImageServiceClient(
+  baseUrl: 'http://localhost:8080',
+  apiKey: 'your-secret-api-key',
+);
+
+// Upload an image
+final response = await client.uploadImage(
+  imageBytes: imageBytes,
+  fileName: 'photo.jpg',
+);
+
+// Get transformed image URL
+final url = client.getImageUrl(
+  'photo.jpg',
+  transform: ImageTransformOptions(width: 500, height: 300),
+);
+```
+
+For complete documentation, see the [image_service_client package on pub.dev](https://pub.dev/packages/image_service_client).
 
 ## Usage
 
@@ -298,12 +364,24 @@ Images are stored in `data/images/` with two files per image:
 
 ### Docker Deployment
 
-The included Dockerfile creates a minimal production image:
+Pre-built Docker images are available at the [GitHub Container Registry](https://github.com/mtwichel/image_service/pkgs/container/image_service) for both `linux/amd64` and `linux/arm64` architectures.
 
-1. Uses multi-stage build for smaller image size
-2. Compiles to native executable for best performance
-3. Uses `scratch` base image for minimal attack surface
-4. Includes static assets from `public/` directory
+The Docker image features:
+
+1. Multi-stage build for smaller image size (~20MB)
+2. Compiled to native executable for best performance
+3. `scratch` base image for minimal attack surface
+4. Non-root user (UID 65534) for security
+5. Static assets from `public/` directory
+
+**Using pre-built image:**
+
+```bash
+docker pull ghcr.io/mtwichel/image_service:latest
+docker run -p 8080:8080 -e SECRET_KEY=xxx -v ./data:/app/data ghcr.io/mtwichel/image_service:latest
+```
+
+**Building locally:**
 
 ```bash
 docker build -t image_service .

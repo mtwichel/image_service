@@ -18,15 +18,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  image_service_client:
-    path: ../image_service_client
-```
-
-Or if published:
-
-```yaml
-dependencies:
-  image_service_client: ^0.1.0
+  image_service_client: ^0.0.1-dev.1
 ```
 
 ## Usage
@@ -134,6 +126,27 @@ try {
   print('Error: ${e.statusCode} - ${e.message}');
 }
 ```
+
+## Server Setup
+
+This client library requires the Image Service server to be running. The easiest way to get started is using the pre-built Docker image:
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/mtwichel/image_service:latest
+
+# Run the server
+docker run -d \
+  -p 8080:8080 \
+  -e SECRET_KEY=your-secret-api-key \
+  -v $(pwd)/data:/app/data \
+  --name image_service \
+  ghcr.io/mtwichel/image_service:latest
+```
+
+**Available architectures:** `linux/amd64`, `linux/arm64`
+
+For complete server documentation, deployment options, and building from source, see the [Image Service repository](https://github.com/mtwichel/image_service).
 
 ## API Reference
 
@@ -255,6 +268,12 @@ Future<void> main() async {
 }
 ```
 
+## Server Resources
+
+- **GitHub Repository**: [mtwichel/image_service](https://github.com/mtwichel/image_service)
+- **Docker Images**: [GitHub Container Registry](https://github.com/mtwichel/image_service/pkgs/container/image_service)
+- **Server Documentation**: [README](https://github.com/mtwichel/image_service#readme)
+
 ## License
 
-Same as the Image Service project.
+MIT License - Same as the Image Service project.
