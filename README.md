@@ -1,5 +1,8 @@
 # Image Service
 
+[![shorebird ci](https://api.shorebird.dev/api/v1/github/mtwichel/image_service/badge.svg)](https://console.shorebird.dev/ci)
+[![codecov](https://codecov.io/gh/mtwichel/image_service/graph/badge.svg?token=TETPHVRNO0)](https://codecov.io/gh/mtwichel/image_service)
+
 A high-performance image storage and serving service built with Dart and Dart Frog. This service provides secure image upload, storage, on-the-fly image transformation, and a beautiful web dashboard for managing your images.
 
 ## Features

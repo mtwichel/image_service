@@ -1,5 +1,8 @@
 # Image Service Client
 
+[![shorebird ci](https://api.shorebird.dev/api/v1/github/mtwichel/image_service/badge.svg)](https://console.shorebird.dev/ci)
+[![codecov](https://codecov.io/gh/mtwichel/image_service/graph/badge.svg?token=TETPHVRNO0)](https://codecov.io/gh/mtwichel/image_service)
+
 A Dart client library for interacting with the Image Service server. Provides a simple, type-safe API for uploading, retrieving, transforming, and managing images.
 
 ## Features
