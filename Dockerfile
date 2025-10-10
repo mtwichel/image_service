@@ -1,29 +1,67 @@
-FROM dart:3.9.0 AS build
+# Multi-stage Dockerfile for Image Service
+# Stage 1: Build the application
+FROM dart:stable AS build
 
+# Set working directory
 WORKDIR /app
 
-# Resolve app dependencies.
-COPY pubspec.* ./
+# Copy pubspec files first for better layer caching
+COPY pubspec.yaml pubspec.lock ./
+
+# Install dependencies
 RUN dart pub get
 
-# Copy app source code and AOT compile it.
+# Copy source code
 COPY . .
 
-# Generate a production build.
+# Install dart_frog_cli globally
 RUN dart pub global activate dart_frog_cli
+
+# Generate production build
 RUN dart pub global run dart_frog_cli:dart_frog build
 
-# Ensure packages are still up-to-date if anything has changed.
-RUN dart pub get --offline
+# Compile the application to native executable
 RUN dart compile exe build/bin/server.dart -o build/bin/server
 
-# Build minimal serving image from AOT-compiled `/server` and required system
-# libraries and configuration files stored in `/runtime/` from the build stage.
+# Stage 2: Create minimal runtime image from scratch
 FROM scratch
+
+# Copy minimal runtime dependencies from Dart SDK
+# This includes the necessary C libraries that the compiled binary needs
 COPY --from=build /runtime/ /
-COPY --from=build /app/build/bin/server /app/bin/
-# Uncomment the following line if you are serving static files.
+
+# Copy CA certificates for HTTPS requests (if needed)
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+# Copy passwd/group files for non-root user support
+# The Dart runtime includes these in /runtime/
+COPY --from=build /runtime/etc/passwd /etc/passwd
+COPY --from=build /runtime/etc/group /etc/group
+
+# Copy the compiled binary
+COPY --from=build /app/build/bin/server /app/bin/server
+
+# Copy static assets
 COPY --from=build /app/build/public /public/
 
-# Start the server.
+# Create data directory structure (just copying the empty structure)
+# Note: In scratch, we can't create dirs, so mount a volume at runtime
+# The app should create /app/data/images if it doesn't exist
+
+# Use numeric UID/GID for non-root user (nobody = 65534)
+# This works even in scratch without useradd
+USER 65534:65534
+
+# Expose port
+EXPOSE 8080
+
+
+# Add labels for better container management
+LABEL org.opencontainers.image.title="Image Service"
+LABEL org.opencontainers.image.description="High-performance image storage and serving service built with Dart Frog"
+LABEL org.opencontainers.image.vendor="Marcus Twichel"
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.security="Minimal attack surface with scratch base image and non-root user"
+
+# Start the server
 CMD ["/app/bin/server"]
