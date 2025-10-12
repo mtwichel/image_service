@@ -23,6 +23,9 @@ RUN dart pub global run dart_frog_cli:dart_frog build
 # Compile the application to native executable
 RUN dart compile exe build/bin/server.dart -o build/bin/server
 
+# Create data directory structure with proper ownership for non-root user
+RUN mkdir -p /app/data/images && chown -R 65534:65534 /app/data
+
 # Stage 2: Create minimal runtime image from scratch
 FROM scratch
 
@@ -36,9 +39,9 @@ COPY --from=build /app/build/bin/server /app/bin/server
 # Copy static assets
 COPY --from=build /app/build/public /public/
 
-# Create data directory structure (just copying the empty structure)
-# Note: In scratch, we can't create dirs, so mount a volume at runtime
-# The app should create /app/data/images if it doesn't exist
+# Copy data directory structure with proper ownership
+# This creates /app/data/images owned by user 65534 for writable volume mount
+COPY --from=build --chown=65534:65534 /app/data /app/data
 
 # Use numeric UID/GID for non-root user (nobody = 65534)
 # This works even in scratch without useradd
