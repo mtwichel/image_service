@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
 import 'package:image/image.dart' as image;
+import 'package:image_service/src/image_upload_utils.dart';
 
 Future<Response> onRequest(
   RequestContext context,
@@ -27,7 +28,7 @@ Future<Response> _onGet(
     for (final [key, value] in separateProperties) key: value,
   };
 
-  final file = File('data/images/$fileName');
+  final file = File('$imageDirectory/$fileName');
   if (!file.existsSync()) {
     return Response(statusCode: HttpStatus.notFound);
   }

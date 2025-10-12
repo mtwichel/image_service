@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
+import 'package:image_service/src/image_upload_utils.dart';
 import 'package:mime/mime.dart';
 
 Future<Response> onRequest(RequestContext context, String fileName) async {
@@ -20,7 +21,7 @@ Future<Response> _onPut(RequestContext context, String fileName) async {
   }
 
   final bytesStream = context.request.bytes();
-  final directory = Directory('data/images');
+  final directory = Directory(imageDirectory);
   if (!directory.existsSync()) {
     directory.createSync(recursive: true);
   }
@@ -30,7 +31,7 @@ Future<Response> _onPut(RequestContext context, String fileName) async {
 }
 
 Future<Response> _onGet(RequestContext context, String fileName) async {
-  final file = File('data/images/$fileName');
+  final file = File('$imageDirectory/$fileName');
   if (!file.existsSync()) {
     return Response(statusCode: HttpStatus.notFound);
   }
@@ -50,7 +51,7 @@ Future<Response> _onDelete(RequestContext context, String fileName) async {
     return Response(statusCode: HttpStatus.unauthorized);
   }
 
-  final file = File('data/images/$fileName');
+  final file = File('$imageDirectory/$fileName');
   if (!file.existsSync()) {
     return Response(statusCode: HttpStatus.notFound);
   }
@@ -59,7 +60,7 @@ Future<Response> _onDelete(RequestContext context, String fileName) async {
     await file.delete();
 
     // Also delete the metadata file if it exists
-    final metadataFile = File('data/images/$fileName.meta');
+    final metadataFile = File('$imageDirectory/$fileName.meta');
     if (metadataFile.existsSync()) {
       await metadataFile.delete();
     }
