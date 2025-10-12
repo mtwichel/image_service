@@ -6,7 +6,19 @@ import 'dart:math';
 const maxImageFileSize = 10 * 1024 * 1024;
 
 /// Image data directory path
-const imageDirectory = 'data/images';
+/// Uses absolute path for container environments, falls back to relative for local dev
+String get imageDirectory {
+  // In production (container), use absolute path
+  // In development, use relative path
+  const productionPath = '/app/data/images';
+  const devPath = 'data/images';
+
+  // Check if we're likely in a container by checking if /app exists
+  if (Directory('/app').existsSync()) {
+    return productionPath;
+  }
+  return devPath;
+}
 
 /// Validates if the provided bytes represent a valid image file
 ///

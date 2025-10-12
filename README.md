@@ -146,7 +146,11 @@ docker run -d \
   image_service
 ```
 
-**Note:** Mount the `data` directory as a volume to persist images between container restarts.
+**Important:**
+
+- **Always mount a volume** at `/app/data` to persist images between container restarts
+- The container runs as a non-root user (UID 65534) for security
+- The image is pre-configured with proper directory permissions for the mounted volume
 
 ## Client Library
 
@@ -392,10 +396,11 @@ When running in development mode (`dart_frog dev`), the service automatically re
 
 ### Environment Variables
 
-| Variable     | Required | Default | Description                      |
-| ------------ | -------- | ------- | -------------------------------- |
-| `SECRET_KEY` | Yes      | -       | API key for authentication       |
-| `CACHE_TIME` | No       | 604800  | Cache time in seconds for images |
+| Variable     | Required | Default | Description                                      |
+| ------------ | -------- | ------- | ------------------------------------------------ |
+| `SECRET_KEY` | Yes      | -       | API key for authentication                       |
+| `BASE_URL`   | No       | -       | Base URL for generating public URLs in dashboard |
+| `CACHE_TIME` | No       | 604800  | Cache time in seconds for images                 |
 
 ### Storage
 
@@ -416,7 +421,8 @@ The Docker image features:
 2. Compiled to native executable for best performance
 3. `scratch` base image for minimal attack surface
 4. Non-root user (UID 65534) for security
-5. Static assets from `public/` directory
+5. Pre-configured directory permissions for data volume
+6. Static assets from `public/` directory
 
 **Using pre-built image:**
 
@@ -430,6 +436,26 @@ docker run -p 8080:8080 -e SECRET_KEY=xxx -v ./data:/app/data ghcr.io/mtwichel/i
 ```bash
 docker build -t image_service .
 docker run -p 8080:8080 -e SECRET_KEY=xxx -v ./data:/app/data image_service
+```
+
+**Docker Compose Example:**
+
+```yaml
+services:
+  image-service:
+    image: ghcr.io/mtwichel/image_service:latest
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - SECRET_KEY=your-secret-api-key-here
+      - BASE_URL=http://localhost:8080 # Update with your actual URL
+      - CACHE_TIME=604800
+    volumes:
+      - image_data:/app/data
+
+volumes:
+  image_data:
 ```
 
 ### Recommended Production Setup
