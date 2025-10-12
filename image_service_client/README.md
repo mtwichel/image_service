@@ -8,6 +8,7 @@ A Dart client library for interacting with the Image Service server. Provides a 
 ## Features
 
 - 📤 **Upload Images** - Multipart form upload or binary PUT with custom filename
+- ⏰ **Temporary Upload URLs** - Generate secure, single-use tokens for client-side uploads
 - 📥 **Retrieve Images** - Get original or transformed versions
 - 🎨 **Transform Images** - On-the-fly resizing and quality adjustment
 - 🗑️ **Delete Images** - Remove images from the server
@@ -65,6 +66,35 @@ final response = await client.uploadImageWithFilename(
 
 print('Uploaded: ${response.url}');
 ```
+
+**Using temporary upload token (no API key needed):**
+
+Temporary upload URLs allow you to generate a secure, single-use token that clients can use to upload images directly without exposing your API key. Perfect for client-side uploads in mobile or web apps.
+
+```dart
+// Step 1: Create a temporary upload URL (requires API key)
+final tempUrl = await client.createTemporaryUploadUrl();
+
+print('Token: ${tempUrl.token}');
+print('Expires in: ${tempUrl.expiresIn} seconds');
+
+// Step 2: Use the token to upload (no API key needed!)
+// This can be done from a mobile app or browser without exposing your API key
+final response = await client.uploadImageWithToken(
+  token: tempUrl.token,
+  imageBytes: imageBytes,
+  fileName: 'photo.jpg', // optional
+);
+
+print('Uploaded: ${response.url}');
+```
+
+**Security Features:**
+
+- Token is single-use (automatically deleted after upload)
+- Expires after 15 minutes
+- Cryptographically secure (32 random bytes)
+- Perfect for client-side uploads without exposing API keys
 
 ### Retrieve an Image
 

@@ -1,12 +1,17 @@
 import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
+import 'package:image_service/src/temporary_upload_token_store.dart';
+
+// Singleton token store instance
+final _tokenStore = TemporaryUploadTokenStore();
 
 Handler middleware(Handler handler) {
   return handler
       .use(requestLogger())
       .use(_corsMiddleware)
-      .use(_cacheControlMiddleware);
+      .use(_cacheControlMiddleware)
+      .use(provider<TemporaryUploadTokenStore>((_) => _tokenStore));
 }
 
 const _corsHeaders = {
