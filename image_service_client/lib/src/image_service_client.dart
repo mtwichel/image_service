@@ -2,9 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
-import 'package:image_service_client/src/models/image_metadata.dart';
-import 'package:image_service_client/src/models/image_transform_options.dart';
-import 'package:image_service_client/src/models/upload_response.dart';
+import 'package:image_service_client/src/models/models.dart';
 
 /// {@template image_service_client}
 /// A client library for interacting with the Image Service server
@@ -201,6 +199,73 @@ class ImageServiceClient {
       return images
           .map((e) => ImageMetadata.fromMap(e as Map<String, dynamic>))
           .toList();
+    }
+
+    throw ImageServiceException(
+      statusCode: response.statusCode,
+      message: response.body,
+    );
+  }
+
+  /// Creates a temporary upload URL (requires authentication)
+  ///
+  /// Generates a single-use, time-limited (15 minutes) upload token that
+  /// can be used to upload an image without requiring API key authentication.
+  ///
+  /// Returns [TemporaryUploadUrl] with token and expiration information
+  ///
+  /// Throws [ImageServiceException] on failure
+  Future<TemporaryUploadUrl> createTemporaryUploadUrl() async {
+    final uri = Uri.parse('$baseUrl/upload_tokens');
+    final response = await _httpClient.post(
+      uri,
+      headers: _authHeaders,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return TemporaryUploadUrl.fromMap(json);
+    }
+
+    throw ImageServiceException(
+      statusCode: response.statusCode,
+      message: response.body,
+    );
+  }
+
+  /// Uploads an image using a temporary token (no authentication required)
+  ///
+  /// [token] - The temporary upload token obtained from
+  ///           [createTemporaryUploadUrl]
+  /// [imageBytes] - The image file bytes
+  /// [fileName] - Optional original filename (with extension)
+  ///
+  /// Returns [UploadResponse] with the URL and metadata
+  ///
+  /// Note: The token is single-use and expires after 15 minutes
+  ///
+  /// Throws [ImageServiceException] on failure
+  Future<UploadResponse> uploadImageWithToken({
+    required String token,
+    required Uint8List imageBytes,
+    String? fileName,
+  }) async {
+    final uri = Uri.parse('$baseUrl/upload_tokens/$token');
+    final request = http.MultipartRequest('POST', uri)
+      ..files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          imageBytes,
+          filename: fileName,
+        ),
+      );
+
+    final streamedResponse = await _httpClient.send(request);
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return UploadResponse.fromMap(json);
     }
 
     throw ImageServiceException(

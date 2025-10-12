@@ -74,13 +74,33 @@ Future<void> main() async {
       print('     Size: ${image.size} bytes');
     }
 
-    // Example 7: Delete an image
-    print('7. Deleting image...');
-    await client.deleteImage(uploadResponse.fileName);
-    print('   Deleted: ${uploadResponse.fileName}\n');
+    // Example 7: Create temporary upload URL
+    print('7. Creating temporary upload URL...');
+    final tempUrl = await client.createTemporaryUploadUrl();
+    print('   Token: ${tempUrl.token}');
+    print('   Upload URL: ${tempUrl.uploadUrl}');
+    print('   Expires at: ${tempUrl.expiresAt}');
+    print('   Expires in: ${tempUrl.expiresIn} seconds\n');
 
-    // Example 8: Error handling
-    print('8. Error handling example...');
+    // Example 8: Upload with temporary token (no API key needed)
+    print('8. Uploading with temporary token...');
+    final tokenUpload = await client.uploadImageWithToken(
+      token: tempUrl.token,
+      imageBytes: imageBytes,
+      fileName: 'token-upload-example.jpg',
+    );
+    print('   Uploaded: ${tokenUpload.url}');
+    print('   File name: ${tokenUpload.fileName}\n');
+
+    // Example 9: Delete images
+    print('9. Deleting images...');
+    await client.deleteImage(uploadResponse.fileName);
+    print('   Deleted: ${uploadResponse.fileName}');
+    await client.deleteImage(tokenUpload.fileName);
+    print('   Deleted: ${tokenUpload.fileName}\n');
+
+    // Example 10: Error handling
+    print('10. Error handling example...');
     try {
       await client.getImage('non-existent-file.jpg');
     } on ImageServiceException catch (e) {

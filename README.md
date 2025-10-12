@@ -9,6 +9,7 @@ A high-performance image storage and serving service built with Dart and Dart Fr
 
 - 🖼️ **Image Upload & Storage** - Upload images via web dashboard or REST API
 - 🔒 **Security First** - File validation using magic byte checking, size limits, and API key authentication
+- ⏰ **Temporary Upload URLs** - Generate secure, single-use upload tokens for client-side uploads
 - 🎨 **Image Transformation** - On-the-fly image resizing and quality adjustment
 - 📊 **Web Dashboard** - Modern, responsive UI for managing images
 - 🚀 **High Performance** - Built-in caching headers and optimized delivery
@@ -207,6 +208,46 @@ All authenticated endpoints require the `x-api-key` header:
 ```bash
 x-api-key: your-secret-api-key
 ```
+
+#### Create Temporary Upload URL (POST)
+
+Generate a temporary, single-use upload token that expires in 15 minutes:
+
+```bash
+curl -X POST \
+  -H "x-api-key: your-secret-api-key" \
+  http://localhost:8080/upload_tokens
+```
+
+Response:
+
+```json
+{
+  "token": "abc123...",
+  "uploadUrl": "/upload_tokens/abc123...",
+  "expiresAt": "2024-01-01T12:15:00.000Z",
+  "expiresIn": 900
+}
+```
+
+**Security Features:**
+
+- Requires API key authentication to create
+- Token is single-use (deleted after first upload)
+- Expires after 15 minutes
+- Cryptographically secure (32 random bytes)
+
+#### Upload with Token (POST)
+
+Upload an image using a temporary token (no API key required):
+
+```bash
+curl -X POST \
+  -F "file=@image.jpg" \
+  http://localhost:8080/upload_tokens/{token}
+```
+
+**Note:** This endpoint does NOT require the `x-api-key` header. The token itself provides authentication.
 
 #### Upload Image (POST)
 
