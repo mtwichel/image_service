@@ -16,6 +16,7 @@ Future<Response> onRequest(RequestContext context) async {
 
 Future<Response> _onGet(RequestContext context) async {
   final secretKey = Platform.environment['SECRET_KEY'];
+  final baseUrl = Platform.environment['BASE_URL'];
   final requestApiKey = context.request.headers['x-api-key'];
   if (secretKey == null ||
       requestApiKey == null ||
@@ -24,21 +25,22 @@ Future<Response> _onGet(RequestContext context) async {
   }
 
   final directory = Directory(imageDirectory);
+  final List<File> files;
   if (!directory.existsSync()) {
-    return Response(statusCode: HttpStatus.notFound);
+    files = [];
+  } else {
+    files =
+        directory
+            .listSync()
+            .whereType<File>()
+            .where(
+              (file) => !file.path.endsWith('.meta'),
+            ) // Exclude metadata files
+            .toList()
+          ..sort(
+            (a, b) => b.statSync().modified.compareTo(a.statSync().modified),
+          );
   }
-
-  final files =
-      directory
-          .listSync()
-          .whereType<File>()
-          .where(
-            (file) => !file.path.endsWith('.meta'),
-          ) // Exclude metadata files
-          .toList()
-        ..sort(
-          (a, b) => b.statSync().modified.compareTo(a.statSync().modified),
-        );
 
   return HtmlResponse(
     context: context,
@@ -132,7 +134,7 @@ Future<Response> _onGet(RequestContext context) async {
                                 'font-mono text-sm bg-gray-50 p-2 rounded border relative break-all whitespace-normal min-w-48',
                             children: [
                               Text(
-                                'https://images.joinclubhaus.com/files/${file.path.split('/').last}',
+                                '$baseUrl/files/${file.path.split('/').last}',
                               ),
                             ],
                           ),
@@ -181,6 +183,7 @@ Future<Response> _onGet(RequestContext context) async {
 
 Future<Response> _onPost(RequestContext context) async {
   final secretKey = Platform.environment['SECRET_KEY'];
+  final baseUrl = Platform.environment['BASE_URL'];
   final requestApiKey = context.request.headers['x-api-key'];
   if (secretKey == null ||
       requestApiKey == null ||
@@ -246,11 +249,7 @@ Future<Response> _onPost(RequestContext context) async {
               Div(
                 className:
                     'font-mono text-sm bg-gray-50 p-2 rounded border relative break-all whitespace-normal min-w-48',
-                children: [
-                  Text(
-                    'https://images.joinclubhaus.com/files/${result.secureFileName}',
-                  ),
-                ],
+                children: [Text('$baseUrl/files/${result.secureFileName}')],
               ),
             ],
           ),
