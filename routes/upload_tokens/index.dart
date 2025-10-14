@@ -25,7 +25,7 @@ Future<Response> _onPost(RequestContext context) async {
   final tokenStore = context.read<TemporaryUploadTokenStore>();
 
   // Generate new token
-  final (token, expiresAt) = tokenStore.generateToken();
+  final (token, expiresAt) = await tokenStore.generateToken();
 
   // Calculate expiration time in seconds
   final expiresIn = expiresAt.difference(DateTime.now()).inSeconds;
