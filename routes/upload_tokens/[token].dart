@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:dart_frog/dart_frog.dart';
 import 'package:image_service/src/image_upload_utils.dart';
+import 'package:image_service/src/metadata.dart';
 import 'package:image_service/src/temporary_upload_token_store.dart';
 
 Future<Response> onRequest(RequestContext context, String token) async {
@@ -16,9 +17,10 @@ Future<Response> onRequest(RequestContext context, String token) async {
 Future<Response> _onPost(RequestContext context, String token) async {
   // Get token store from context
   final tokenStore = context.read<TemporaryUploadTokenStore>();
+  final metadataStore = context.read<ImageMetadataStore>();
 
   // Validate and consume the token (single-use)
-  final isValidToken = tokenStore.validateAndConsumeToken(token);
+  final isValidToken = await tokenStore.validateAndConsumeToken(token);
 
   if (!isValidToken) {
     return Response(
@@ -41,10 +43,11 @@ Future<Response> _onPost(RequestContext context, String token) async {
     final bytes = await fileField.readAsBytes();
     final originalFileName = fileField.name.isNotEmpty ? fileField.name : '';
 
-    // Process the upload using shared utilities
+    // Process the upload using shared utilities with metadata store
     final result = await processImageUpload(
       bytes: bytes,
       originalFileName: originalFileName,
+      metadataStore: metadataStore,
     );
 
     return Response.json(body: result.toJson(), statusCode: HttpStatus.created);

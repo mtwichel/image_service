@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:dart_frog_html/dart_frog_html.dart';
 import 'package:image_service/src/image_upload_utils.dart';
+import 'package:image_service/src/metadata.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   return switch (context.request.method) {
@@ -205,10 +206,13 @@ Future<Response> _onPost(RequestContext context) async {
     final bytes = await fileField.readAsBytes();
     final originalFileName = fileField.name.isNotEmpty ? fileField.name : '';
 
+    final metadataStore = context.read<ImageMetadataStore>();
+
     // Process the upload using shared utilities
     final result = await processImageUpload(
       bytes: bytes,
       originalFileName: originalFileName,
+      metadataStore: metadataStore,
     );
 
     // Return a single table row for the newly uploaded file

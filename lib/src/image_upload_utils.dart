@@ -2,12 +2,29 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:image_service/src/metadata.dart';
+
 /// Maximum allowed file size (10MB)
 const maxImageFileSize = 10 * 1024 * 1024;
 
 /// Image data directory path
-/// Uses absolute path for container environments, falls back to relative for local dev
+/// Uses absolute path for container environments, falls back to relative for
+/// local dev
 String get imageDirectory {
+  // In production (container), use absolute path
+  // In development, use relative path
+  const productionPath = '/app/data/images';
+  const devPath = 'data/images';
+
+  // Check if we're likely in a container by checking if /app exists
+  if (Directory('/app').existsSync()) {
+    return productionPath;
+  }
+  return devPath;
+}
+
+/// Metadata directory path
+String get metadataDirectory {
   // In production (container), use absolute path
   // In development, use relative path
   const productionPath = '/app/data/images';
@@ -168,15 +185,20 @@ class ImageUploadResult {
 /// Performs:
 /// - File size validation (max 10MB)
 /// - Magic byte validation for file type
-/// - Secure filename generation
+/// - Checks for existing images with same filename
+/// - Secure filename generation (if needed)
 /// - File storage
 /// - Metadata storage
+///
+/// If an image with the same original filename already exists,
+/// it updates that existing file and returns the existing secure filename.
 ///
 /// Returns [ImageUploadResult] on success
 /// Throws [ImageUploadException] on validation or storage failure
 Future<ImageUploadResult> processImageUpload({
   required List<int> bytes,
   required String originalFileName,
+  required ImageMetadataStore metadataStore,
 }) async {
   // Security: Validate file size (max 10MB)
   if (bytes.length > maxImageFileSize) {
@@ -195,10 +217,8 @@ Future<ImageUploadResult> processImageUpload({
     );
   }
 
-  // Security: Generate secure filename to prevent conflicts and traversal
   final originalName = originalFileName.isNotEmpty ? originalFileName : 'image';
   final extension = getFileExtension(originalName);
-  final secureFileName = '${generateSecureFileName()}$extension';
 
   // Ensure the directory exists
   final directory = Directory(imageDirectory);
@@ -206,11 +226,46 @@ Future<ImageUploadResult> processImageUpload({
     directory.createSync(recursive: true);
   }
 
-  // Save the file with secure filename
-  final file = File('${directory.path}/$secureFileName');
-  await file.writeAsBytes(bytes);
+  // Check if an image with the same original filename exists
+  final existingMetadata = metadataStore.findByOriginalName(originalName);
 
-  // Save metadata with original filename
+  String secureFileName;
+
+  if (existingMetadata != null) {
+    // File already exists - update the existing file and metadata
+    secureFileName = existingMetadata.secureFileName;
+
+    // Update the existing file
+    final file = File('${directory.path}/$secureFileName');
+    await file.writeAsBytes(bytes);
+
+    // Update metadata with new uploadedAt timestamp
+    final updatedMetadata = ImageMetadata(
+      originalName: originalName,
+      secureFileName: secureFileName,
+      uploadedAt: DateTime.now(),
+      fileSize: bytes.length,
+    );
+    await metadataStore.saveOrUpdateMetadata(updatedMetadata);
+  } else {
+    // New file - create new secure filename
+    secureFileName = '${generateSecureFileName()}$extension';
+
+    // Save the file with secure filename
+    final file = File('${directory.path}/$secureFileName');
+    await file.writeAsBytes(bytes);
+
+    // Save new metadata
+    final metadata = ImageMetadata(
+      originalName: originalName,
+      secureFileName: secureFileName,
+      uploadedAt: DateTime.now(),
+      fileSize: bytes.length,
+    );
+    await metadataStore.saveOrUpdateMetadata(metadata);
+  }
+
+  // Save legacy .meta file for backward compatibility
   await saveMetadata(directory.path, secureFileName, originalName);
 
   return ImageUploadResult(
