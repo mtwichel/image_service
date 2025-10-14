@@ -11,6 +11,7 @@ class ImageMetadata {
     required this.secureFileName,
     required this.uploadedAt,
     required this.fileSize,
+    this.bucket,
   });
 
   /// The original filename provided by the user
@@ -28,6 +29,10 @@ class ImageMetadata {
   /// Size of the file in bytes
   @HiveField(3)
   final int fileSize;
+
+  /// Optional bucket name for organization
+  @HiveField(4)
+  final String? bucket;
 }
 
 /// Hive-backed store for image metadata
@@ -86,6 +91,57 @@ class ImageMetadataStore {
   Future<void> saveOrUpdateMetadata(ImageMetadata metadata) async {
     _ensureInitialized();
     await _box!.put(metadata.originalName, metadata);
+  }
+
+  /// Finds metadata by original filename and optional bucket
+  ///
+  /// Returns null if no metadata exists for this filename in the
+  /// specified bucket.
+  /// O(n) lookup when bucket is specified (needs to scan all entries).
+  ImageMetadata? findByOriginalNameAndBucket(
+    String originalName, {
+    String? bucket,
+  }) {
+    _ensureInitialized();
+
+    // If no bucket specified, use the original key-based lookup
+    if (bucket == null) {
+      final metadata = _box!.get(originalName);
+      // Only return if it also has no bucket
+      if (metadata?.bucket == null) {
+        return metadata;
+      }
+      return null;
+    }
+
+    // Search for matching originalName + bucket combination
+    for (final metadata in _box!.values) {
+      if (metadata.originalName == originalName && metadata.bucket == bucket) {
+        return metadata;
+      }
+    }
+
+    return null;
+  }
+
+  /// Lists all images in a specific bucket
+  ///
+  /// Returns empty list if no images exist in the bucket.
+  /// O(n) operation.
+  List<ImageMetadata> listByBucket(String? bucket) {
+    _ensureInitialized();
+
+    return _box!.values.where((metadata) => metadata.bucket == bucket).toList();
+  }
+
+  /// Lists all unique bucket names
+  ///
+  /// Returns a set of all bucket names currently in use.
+  /// O(n) operation.
+  Set<String?> listBuckets() {
+    _ensureInitialized();
+
+    return _box!.values.map((metadata) => metadata.bucket).toSet();
   }
 
   /// Closes the Hive box

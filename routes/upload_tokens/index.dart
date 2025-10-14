@@ -21,11 +21,14 @@ Future<Response> _onPost(RequestContext context) async {
     return Response(statusCode: HttpStatus.unauthorized);
   }
 
+  // Get optional bucket parameter from query string or request body
+  final bucket = context.request.uri.queryParameters['bucket'];
+
   // Get token store from context
   final tokenStore = context.read<TemporaryUploadTokenStore>();
 
-  // Generate new token
-  final (token, expiresAt) = await tokenStore.generateToken();
+  // Generate new token with optional bucket
+  final (token, expiresAt) = await tokenStore.generateToken(bucket: bucket);
 
   // Calculate expiration time in seconds
   final expiresIn = expiresAt.difference(DateTime.now()).inSeconds;
@@ -36,6 +39,7 @@ Future<Response> _onPost(RequestContext context) async {
     'uploadUrl': '/upload_tokens/$token',
     'expiresAt': expiresAt.toIso8601String(),
     'expiresIn': expiresIn,
+    if (bucket != null) 'bucket': bucket,
   };
 
   return Response.json(body: response, statusCode: HttpStatus.created);

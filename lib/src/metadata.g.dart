@@ -21,13 +21,14 @@ class ImageMetadataAdapter extends TypeAdapter<ImageMetadata> {
       secureFileName: fields[1] as String,
       uploadedAt: fields[2] as DateTime,
       fileSize: (fields[3] as num).toInt(),
+      bucket: fields[4] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, ImageMetadata obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.originalName)
       ..writeByte(1)
@@ -35,7 +36,9 @@ class ImageMetadataAdapter extends TypeAdapter<ImageMetadata> {
       ..writeByte(2)
       ..write(obj.uploadedAt)
       ..writeByte(3)
-      ..write(obj.fileSize);
+      ..write(obj.fileSize)
+      ..writeByte(4)
+      ..write(obj.bucket);
   }
 
   @override

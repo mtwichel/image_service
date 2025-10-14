@@ -19,17 +19,20 @@ class TokenEntryAdapter extends TypeAdapter<_TokenEntry> {
     return _TokenEntry(
       createdAt: fields[0] as DateTime,
       expiresAt: fields[1] as DateTime,
+      bucket: fields[2] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, _TokenEntry obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(3)
       ..writeByte(0)
       ..write(obj.createdAt)
       ..writeByte(1)
-      ..write(obj.expiresAt);
+      ..write(obj.expiresAt)
+      ..writeByte(2)
+      ..write(obj.bucket);
   }
 
   @override

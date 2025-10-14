@@ -8,13 +8,16 @@ part 'temporary_upload_token_store.g.dart';
 /// A token entry with expiration information
 @HiveType(typeId: 0)
 class _TokenEntry {
-  _TokenEntry({required this.createdAt, required this.expiresAt});
+  _TokenEntry({required this.createdAt, required this.expiresAt, this.bucket});
 
   @HiveField(0)
   final DateTime createdAt;
 
   @HiveField(1)
   final DateTime expiresAt;
+
+  @HiveField(2)
+  final String? bucket;
 
   bool get isExpired => DateTime.now().isAfter(expiresAt);
 }
@@ -77,8 +80,10 @@ class TemporaryUploadTokenStore {
 
   /// Generates a new cryptographically secure token
   ///
+  /// [bucket] - Optional bucket name for organized image storage
+  ///
   /// Returns a tuple of (token, expiresAt)
-  Future<(String, DateTime)> generateToken() async {
+  Future<(String, DateTime)> generateToken({String? bucket}) async {
     _ensureInitialized();
 
     // Generate 32 random bytes for security
@@ -88,23 +93,28 @@ class TemporaryUploadTokenStore {
     final now = DateTime.now();
     final expiresAt = now.add(tokenDuration);
 
-    await _box!.put(token, _TokenEntry(createdAt: now, expiresAt: expiresAt));
+    await _box!.put(
+      token,
+      _TokenEntry(createdAt: now, expiresAt: expiresAt, bucket: bucket),
+    );
 
     return (token, expiresAt);
   }
 
   /// Validates and consumes a token (single-use)
   ///
-  /// Returns true if the token is valid and not expired.
+  /// Returns a tuple of (isValid, bucket).
   /// The token is removed from the store after this call.
-  Future<bool> validateAndConsumeToken(String token) async {
+  Future<(bool, String?)> validateAndConsumeToken(String token) async {
     _ensureInitialized();
 
     final entry = _box!.get(token);
 
     if (entry == null) {
-      return false;
+      return (false, null);
     }
+
+    final bucket = entry.bucket;
 
     // Remove the token (single-use)
     await _box!.delete(token);
@@ -112,7 +122,7 @@ class TemporaryUploadTokenStore {
     // Clean up expired tokens opportunistically
     await _cleanupExpiredTokens();
 
-    return !entry.isExpired;
+    return (!entry.isExpired, bucket);
   }
 
   /// Removes all expired tokens from the store

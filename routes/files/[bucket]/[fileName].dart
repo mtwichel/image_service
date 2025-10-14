@@ -4,16 +4,24 @@ import 'package:dart_frog/dart_frog.dart';
 import 'package:image_service/src/image_upload_utils.dart';
 import 'package:mime/mime.dart';
 
-Future<Response> onRequest(RequestContext context, String fileName) async {
+Future<Response> onRequest(
+  RequestContext context,
+  String bucket,
+  String fileName,
+) async {
   return switch (context.request.method) {
-    HttpMethod.put => _onPut(context, fileName),
-    HttpMethod.get => _onGet(context, fileName),
-    HttpMethod.delete => _onDelete(context, fileName),
+    HttpMethod.put => _onPut(context, bucket, fileName),
+    HttpMethod.get => _onGet(context, bucket, fileName),
+    HttpMethod.delete => _onDelete(context, bucket, fileName),
     _ => Future.value(Response(statusCode: HttpStatus.methodNotAllowed)),
   };
 }
 
-Future<Response> _onPut(RequestContext context, String fileName) async {
+Future<Response> _onPut(
+  RequestContext context,
+  String bucket,
+  String fileName,
+) async {
   final requestApiKey = context.request.headers['x-api-key'];
   final apiKey = Platform.environment['SECRET_KEY'];
   if (apiKey != requestApiKey) {
@@ -21,7 +29,7 @@ Future<Response> _onPut(RequestContext context, String fileName) async {
   }
 
   final bytesStream = context.request.bytes();
-  final directory = Directory(imageDirectory());
+  final directory = Directory(imageDirectory(bucket: bucket));
   if (!directory.existsSync()) {
     directory.createSync(recursive: true);
   }
@@ -30,8 +38,12 @@ Future<Response> _onPut(RequestContext context, String fileName) async {
   return Response(statusCode: HttpStatus.created);
 }
 
-Future<Response> _onGet(RequestContext context, String fileName) async {
-  final file = File('${imageDirectory()}/$fileName');
+Future<Response> _onGet(
+  RequestContext context,
+  String bucket,
+  String fileName,
+) async {
+  final file = File('${imageDirectory(bucket: bucket)}/$fileName');
   if (!file.existsSync()) {
     return Response(statusCode: HttpStatus.notFound);
   }
@@ -44,14 +56,18 @@ Future<Response> _onGet(RequestContext context, String fileName) async {
   );
 }
 
-Future<Response> _onDelete(RequestContext context, String fileName) async {
+Future<Response> _onDelete(
+  RequestContext context,
+  String bucket,
+  String fileName,
+) async {
   final requestApiKey = context.request.headers['x-api-key'];
   final apiKey = Platform.environment['SECRET_KEY'];
   if (apiKey == null || requestApiKey == null || apiKey != requestApiKey) {
     return Response(statusCode: HttpStatus.unauthorized);
   }
 
-  final file = File('${imageDirectory()}/$fileName');
+  final file = File('${imageDirectory(bucket: bucket)}/$fileName');
   if (!file.existsSync()) {
     return Response(statusCode: HttpStatus.notFound);
   }
@@ -60,7 +76,9 @@ Future<Response> _onDelete(RequestContext context, String fileName) async {
     await file.delete();
 
     // Also delete the metadata file if it exists
-    final metadataFile = File('${imageDirectory()}/$fileName.meta');
+    final metadataFile = File(
+      '${imageDirectory(bucket: bucket)}/$fileName.meta',
+    );
     if (metadataFile.existsSync()) {
       await metadataFile.delete();
     }

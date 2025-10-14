@@ -39,6 +39,7 @@ class ImageServiceClient {
   ///
   /// [imageBytes] - The image file bytes
   /// [fileName] - Optional original filename (with extension)
+  /// [bucket] - Optional bucket name for organizing images
   ///
   /// Returns [UploadResponse] with the URL and metadata
   ///
@@ -46,8 +47,15 @@ class ImageServiceClient {
   Future<UploadResponse> uploadImage({
     required Uint8List imageBytes,
     String? fileName,
+    String? bucket,
   }) async {
-    final uri = Uri.parse('$baseUrl/files');
+    var uri = Uri.parse('$baseUrl/files');
+
+    // Add bucket as query parameter if provided
+    if (bucket != null && bucket.isNotEmpty) {
+      uri = uri.replace(queryParameters: {'bucket': bucket});
+    }
+
     final request = http.MultipartRequest('POST', uri)
       ..headers.addAll(_authHeaders)
       ..files.add(
@@ -77,6 +85,7 @@ class ImageServiceClient {
   /// [imageBytes] - The image file bytes
   /// [fileName] - The desired filename (must include extension)
   /// [contentType] - MIME type (e.g., 'image/jpeg', 'image/png')
+  /// [bucket] - Optional bucket name for organizing images
   ///
   /// Returns [UploadResponse] with the URL and metadata
   ///
@@ -85,8 +94,12 @@ class ImageServiceClient {
     required Uint8List imageBytes,
     required String fileName,
     required String contentType,
+    String? bucket,
   }) async {
-    final uri = Uri.parse('$baseUrl/files/$fileName');
+    final path = bucket != null && bucket.isNotEmpty
+        ? '/files/$bucket/$fileName'
+        : '/files/$fileName';
+    final uri = Uri.parse('$baseUrl$path');
     final response = await _httpClient.put(
       uri,
       headers: {
@@ -111,6 +124,7 @@ class ImageServiceClient {
   ///
   /// [fileName] - The filename of the image
   /// [transform] - Optional transformation options
+  /// [bucket] - Optional bucket name where the image is stored
   ///
   /// Returns the image bytes
   ///
@@ -118,13 +132,24 @@ class ImageServiceClient {
   Future<Uint8List> getImage(
     String fileName, {
     ImageTransformOptions? transform,
+    String? bucket,
   }) async {
     String path;
-    if (transform != null && transform.hasTransformations) {
-      final properties = transform.toPropertiesString();
-      path = '/files/$properties/$fileName';
+
+    if (bucket != null && bucket.isNotEmpty) {
+      if (transform != null && transform.hasTransformations) {
+        final properties = transform.toPropertiesString();
+        path = '/files/$bucket/$properties/$fileName';
+      } else {
+        path = '/files/$bucket/$fileName';
+      }
     } else {
-      path = '/files/$fileName';
+      if (transform != null && transform.hasTransformations) {
+        final properties = transform.toPropertiesString();
+        path = '/files/$properties/$fileName';
+      } else {
+        path = '/files/$fileName';
+      }
     }
 
     final uri = Uri.parse('$baseUrl$path');
@@ -144,28 +169,42 @@ class ImageServiceClient {
   ///
   /// [fileName] - The filename of the image
   /// [transform] - Optional transformation options
+  /// [bucket] - Optional bucket name where the image is stored
   ///
   /// Returns the complete URL
   String getImageUrl(
     String fileName, {
     ImageTransformOptions? transform,
+    String? bucket,
   }) {
-    if (transform != null && transform.hasTransformations) {
-      final properties = transform.toPropertiesString();
-      return '$baseUrl/files/$properties/$fileName';
+    if (bucket != null && bucket.isNotEmpty) {
+      if (transform != null && transform.hasTransformations) {
+        final properties = transform.toPropertiesString();
+        return '$baseUrl/files/$bucket/$properties/$fileName';
+      }
+      return '$baseUrl/files/$bucket/$fileName';
+    } else {
+      if (transform != null && transform.hasTransformations) {
+        final properties = transform.toPropertiesString();
+        return '$baseUrl/files/$properties/$fileName';
+      }
+      return '$baseUrl/files/$fileName';
     }
-    return '$baseUrl/files/$fileName';
   }
 
   /// Deletes an image by filename
   ///
   /// [fileName] - The filename of the image to delete
+  /// [bucket] - Optional bucket name where the image is stored
   ///
   /// Returns true if successful
   ///
   /// Throws [ImageServiceException] on failure
-  Future<bool> deleteImage(String fileName) async {
-    final uri = Uri.parse('$baseUrl/files/$fileName');
+  Future<bool> deleteImage(String fileName, {String? bucket}) async {
+    final path = bucket != null && bucket.isNotEmpty
+        ? '/files/$bucket/$fileName'
+        : '/files/$fileName';
+    final uri = Uri.parse('$baseUrl$path');
     final response = await _httpClient.delete(
       uri,
       headers: _authHeaders,
@@ -212,11 +251,19 @@ class ImageServiceClient {
   /// Generates a single-use, time-limited (15 minutes) upload token that
   /// can be used to upload an image without requiring API key authentication.
   ///
+  /// [bucket] - Optional bucket name for organized image storage
+  ///
   /// Returns [TemporaryUploadUrl] with token and expiration information
   ///
   /// Throws [ImageServiceException] on failure
-  Future<TemporaryUploadUrl> createTemporaryUploadUrl() async {
-    final uri = Uri.parse('$baseUrl/upload_tokens');
+  Future<TemporaryUploadUrl> createTemporaryUploadUrl({String? bucket}) async {
+    var uri = Uri.parse('$baseUrl/upload_tokens');
+
+    // Add bucket as query parameter if provided
+    if (bucket != null && bucket.isNotEmpty) {
+      uri = uri.replace(queryParameters: {'bucket': bucket});
+    }
+
     final response = await _httpClient.post(
       uri,
       headers: _authHeaders,
