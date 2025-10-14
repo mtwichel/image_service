@@ -10,17 +10,23 @@ const maxImageFileSize = 10 * 1024 * 1024;
 /// Image data directory path
 /// Uses absolute path for container environments, falls back to relative for
 /// local dev
-String get imageDirectory {
+///
+/// [bucket] - Optional bucket name for organizing images into subdirectories
+String imageDirectory({String? bucket}) {
   // In production (container), use absolute path
   // In development, use relative path
   const productionPath = '/app/data/images';
   const devPath = 'data/images';
 
   // Check if we're likely in a container by checking if /app exists
-  if (Directory('/app').existsSync()) {
-    return productionPath;
+  final basePath = Directory('/app').existsSync() ? productionPath : devPath;
+
+  // If bucket is specified, append it to the path
+  if (bucket != null && bucket.isNotEmpty) {
+    return '$basePath/$bucket';
   }
-  return devPath;
+
+  return basePath;
 }
 
 /// Metadata directory path
@@ -160,6 +166,7 @@ class ImageUploadResult {
     required this.secureFileName,
     required this.originalName,
     required this.fileSize,
+    this.bucket,
   });
 
   /// The generated secure filename
@@ -171,13 +178,23 @@ class ImageUploadResult {
   /// Size of the uploaded file in bytes
   final int fileSize;
 
+  /// Optional bucket name
+  final String? bucket;
+
   /// Converts to a JSON response map
-  Map<String, dynamic> toJson() => {
-    'url': '/files/$secureFileName',
-    'fileName': secureFileName,
-    'originalName': originalName,
-    'size': fileSize,
-  };
+  Map<String, dynamic> toJson() {
+    final url = bucket != null && bucket!.isNotEmpty
+        ? '/files/$bucket/$secureFileName'
+        : '/files/$secureFileName';
+
+    return {
+      'url': url,
+      'fileName': secureFileName,
+      'originalName': originalName,
+      'size': fileSize,
+      if (bucket != null) 'bucket': bucket,
+    };
+  }
 }
 
 /// Validates and processes an image upload
@@ -190,6 +207,8 @@ class ImageUploadResult {
 /// - File storage
 /// - Metadata storage
 ///
+/// [bucket] - Optional bucket name for organized storage
+///
 /// If an image with the same original filename already exists,
 /// it updates that existing file and returns the existing secure filename.
 ///
@@ -199,6 +218,7 @@ Future<ImageUploadResult> processImageUpload({
   required List<int> bytes,
   required String originalFileName,
   required ImageMetadataStore metadataStore,
+  String? bucket,
 }) async {
   // Security: Validate file size (max 10MB)
   if (bytes.length > maxImageFileSize) {
@@ -220,14 +240,17 @@ Future<ImageUploadResult> processImageUpload({
   final originalName = originalFileName.isNotEmpty ? originalFileName : 'image';
   final extension = getFileExtension(originalName);
 
-  // Ensure the directory exists
-  final directory = Directory(imageDirectory);
+  // Ensure the directory exists (with bucket support)
+  final directory = Directory(imageDirectory(bucket: bucket));
   if (!directory.existsSync()) {
     directory.createSync(recursive: true);
   }
 
-  // Check if an image with the same original filename exists
-  final existingMetadata = metadataStore.findByOriginalName(originalName);
+  // Check if an image with the same original filename exists in this bucket
+  final existingMetadata = metadataStore.findByOriginalNameAndBucket(
+    originalName,
+    bucket: bucket,
+  );
 
   String secureFileName;
 
@@ -245,6 +268,7 @@ Future<ImageUploadResult> processImageUpload({
       secureFileName: secureFileName,
       uploadedAt: DateTime.now(),
       fileSize: bytes.length,
+      bucket: bucket,
     );
     await metadataStore.saveOrUpdateMetadata(updatedMetadata);
   } else {
@@ -261,6 +285,7 @@ Future<ImageUploadResult> processImageUpload({
       secureFileName: secureFileName,
       uploadedAt: DateTime.now(),
       fileSize: bytes.length,
+      bucket: bucket,
     );
     await metadataStore.saveOrUpdateMetadata(metadata);
   }
@@ -272,6 +297,7 @@ Future<ImageUploadResult> processImageUpload({
     secureFileName: secureFileName,
     originalName: originalName,
     fileSize: bytes.length,
+    bucket: bucket,
   );
 }
 

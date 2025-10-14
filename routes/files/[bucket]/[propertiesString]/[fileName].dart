@@ -6,11 +6,12 @@ import 'package:image_service/src/image_upload_utils.dart';
 
 Future<Response> onRequest(
   RequestContext context,
+  String bucket,
   String propertiesString,
   String fileName,
 ) async {
   return switch (context.request.method) {
-    HttpMethod.get => _onGet(context, propertiesString, fileName),
+    HttpMethod.get => _onGet(context, bucket, propertiesString, fileName),
 
     _ => Future.value(Response(statusCode: HttpStatus.methodNotAllowed)),
   };
@@ -18,6 +19,7 @@ Future<Response> onRequest(
 
 Future<Response> _onGet(
   RequestContext context,
+  String bucket,
   String propertiesString,
   String fileName,
 ) async {
@@ -28,7 +30,7 @@ Future<Response> _onGet(
     for (final [key, value] in separateProperties) key: value,
   };
 
-  final file = File('${imageDirectory()}/$fileName');
+  final file = File('${imageDirectory(bucket: bucket)}/$fileName');
   if (!file.existsSync()) {
     return Response(statusCode: HttpStatus.notFound);
   }
