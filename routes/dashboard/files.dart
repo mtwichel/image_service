@@ -174,7 +174,7 @@ Future<Response> _onGet(RequestContext context) async {
                                     'text-red-500 font-medium py-2 px-3 border border-red-500 rounded text-sm transition-all duration-200 hover:bg-red-500 hover:text-white cursor-pointer text-center',
                                 attributes: {
                                   'hx-delete':
-                                      '/files/${file.path.split('/').last}',
+                                      '/api/files/${file.path.split('/').last}',
                                   'hx-target': 'closest tr',
                                   'hx-swap': 'outerHTML',
                                   'hx-confirm':

@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.1-dev.3] - 2025-10-19
+
+### Changed
+
+#### Server
+
+- **API Route Organization**: Moved all API endpoints under `/api/` namespace for better organization
+  - `/files/*` → `/api/files/*`
+  - `/upload_tokens/*` → `/api/upload-tokens/*`
+- **Naming Convention**: Changed from snake_case to kebab-case for URL paths
+  - `/upload_tokens` → `/upload-tokens`
+- **Dashboard Routes**: Reorganized dashboard into dedicated directory structure
+  - `/dashboard` → `/dashboard/index.dart`
+  - Added `/dashboard/files.dart` for file management UI
+
 ## [0.0.1-dev.2] - 2025-10-11
 
 ### Added
@@ -137,5 +152,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIME type detection with `package:mime`
 - HTML generation with `dart_frog_html`
 
+[0.0.1-dev.3]: https://github.com/mtwichel/image_service/compare/v0.0.1-dev.2...v0.0.1-dev.3
 [0.0.1-dev.2]: https://github.com/mtwichel/image_service/compare/v0.0.1-dev.1...v0.0.1-dev.2
 [0.0.1-dev.1]: https://github.com/mtwichel/image_service/releases/tag/v0.0.1-dev.1

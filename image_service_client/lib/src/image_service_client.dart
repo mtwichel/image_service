@@ -35,51 +35,6 @@ class ImageServiceClient {
     'x-api-key': apiKey,
   };
 
-  /// Uploads an image file using multipart form data (POST)
-  ///
-  /// [imageBytes] - The image file bytes
-  /// [fileName] - Optional original filename (with extension)
-  /// [bucket] - Optional bucket name for organizing images
-  ///
-  /// Returns [UploadResponse] with the URL and metadata
-  ///
-  /// Throws [ImageServiceException] on failure
-  Future<UploadResponse> uploadImage({
-    required Uint8List imageBytes,
-    String? fileName,
-    String? bucket,
-  }) async {
-    var uri = Uri.parse('$baseUrl/files');
-
-    // Add bucket as query parameter if provided
-    if (bucket != null && bucket.isNotEmpty) {
-      uri = uri.replace(queryParameters: {'bucket': bucket});
-    }
-
-    final request = http.MultipartRequest('POST', uri)
-      ..headers.addAll(_authHeaders)
-      ..files.add(
-        http.MultipartFile.fromBytes(
-          'file',
-          imageBytes,
-          filename: fileName,
-        ),
-      );
-
-    final streamedResponse = await _httpClient.send(request);
-    final response = await http.Response.fromStream(streamedResponse);
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      return UploadResponse.fromMap(json);
-    }
-
-    throw ImageServiceException(
-      statusCode: response.statusCode,
-      message: response.body,
-    );
-  }
-
   /// Uploads an image with a custom filename using PUT
   ///
   /// [imageBytes] - The image file bytes
@@ -90,21 +45,21 @@ class ImageServiceClient {
   /// Returns [UploadResponse] with the URL and metadata
   ///
   /// Throws [ImageServiceException] on failure
-  Future<UploadResponse> uploadImageWithFilename({
+  Future<UploadResponse> uploadImage({
     required Uint8List imageBytes,
     required String fileName,
-    required String contentType,
+    String? contentType,
     String? bucket,
   }) async {
     final path = bucket != null && bucket.isNotEmpty
-        ? '/files/$bucket/$fileName'
-        : '/files/$fileName';
+        ? '/api/files/$bucket/$fileName'
+        : '/api/files/$fileName';
     final uri = Uri.parse('$baseUrl$path');
     final response = await _httpClient.put(
       uri,
       headers: {
         ..._authHeaders,
-        'Content-Type': contentType,
+        'Content-Type': ?contentType,
       },
       body: imageBytes,
     );
@@ -134,25 +89,9 @@ class ImageServiceClient {
     ImageTransformOptions? transform,
     String? bucket,
   }) async {
-    String path;
-
-    if (bucket != null && bucket.isNotEmpty) {
-      if (transform != null && transform.hasTransformations) {
-        final properties = transform.toPropertiesString();
-        path = '/files/$bucket/$properties/$fileName';
-      } else {
-        path = '/files/$bucket/$fileName';
-      }
-    } else {
-      if (transform != null && transform.hasTransformations) {
-        final properties = transform.toPropertiesString();
-        path = '/files/$properties/$fileName';
-      } else {
-        path = '/files/$fileName';
-      }
-    }
-
-    final uri = Uri.parse('$baseUrl$path');
+    final uri = Uri.parse(
+      getImageUrl(fileName, transform: transform, bucket: bucket),
+    );
     final response = await _httpClient.get(uri);
 
     if (response.statusCode == 200) {
@@ -180,15 +119,15 @@ class ImageServiceClient {
     if (bucket != null && bucket.isNotEmpty) {
       if (transform != null && transform.hasTransformations) {
         final properties = transform.toPropertiesString();
-        return '$baseUrl/files/$bucket/$properties/$fileName';
+        return '$baseUrl/api/files/$bucket/$properties/$fileName';
       }
-      return '$baseUrl/files/$bucket/$fileName';
+      return '$baseUrl/api/files/$bucket/$fileName';
     } else {
       if (transform != null && transform.hasTransformations) {
         final properties = transform.toPropertiesString();
-        return '$baseUrl/files/$properties/$fileName';
+        return '$baseUrl/api/files/$properties/$fileName';
       }
-      return '$baseUrl/files/$fileName';
+      return '$baseUrl/api/files/$fileName';
     }
   }
 
@@ -202,8 +141,8 @@ class ImageServiceClient {
   /// Throws [ImageServiceException] on failure
   Future<bool> deleteImage(String fileName, {String? bucket}) async {
     final path = bucket != null && bucket.isNotEmpty
-        ? '/files/$bucket/$fileName'
-        : '/files/$fileName';
+        ? '/api/files/$bucket/$fileName'
+        : '/api/files/$fileName';
     final uri = Uri.parse('$baseUrl$path');
     final response = await _httpClient.delete(
       uri,
@@ -212,32 +151,6 @@ class ImageServiceClient {
 
     if (response.statusCode == 200 || response.statusCode == 204) {
       return true;
-    }
-
-    throw ImageServiceException(
-      statusCode: response.statusCode,
-      message: response.body,
-    );
-  }
-
-  /// Lists all images stored in the service
-  ///
-  /// Returns a list of [ImageMetadata]
-  ///
-  /// Throws [ImageServiceException] on failure
-  Future<List<ImageMetadata>> listImages() async {
-    final uri = Uri.parse('$baseUrl/files');
-    final response = await _httpClient.get(
-      uri,
-      headers: _authHeaders,
-    );
-
-    if (response.statusCode == 200) {
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      final images = json['images'] as List<dynamic>;
-      return images
-          .map((e) => ImageMetadata.fromMap(e as Map<String, dynamic>))
-          .toList();
     }
 
     throw ImageServiceException(
@@ -257,7 +170,7 @@ class ImageServiceClient {
   ///
   /// Throws [ImageServiceException] on failure
   Future<TemporaryUploadUrl> createTemporaryUploadUrl({String? bucket}) async {
-    var uri = Uri.parse('$baseUrl/upload_tokens');
+    var uri = Uri.parse('$baseUrl/api/upload-tokens');
 
     // Add bucket as query parameter if provided
     if (bucket != null && bucket.isNotEmpty) {
@@ -297,7 +210,7 @@ class ImageServiceClient {
     required Uint8List imageBytes,
     String? fileName,
   }) async {
-    final uri = Uri.parse('$baseUrl/upload_tokens/$token');
+    final uri = Uri.parse('$baseUrl/api/upload-tokens/$token');
     final request = http.MultipartRequest('POST', uri)
       ..files.add(
         http.MultipartFile.fromBytes(

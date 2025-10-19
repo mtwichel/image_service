@@ -29,7 +29,7 @@ Future<void> main() async {
 
     // Example 2: Upload with custom filename
     print('2. Uploading with custom filename...');
-    final customUpload = await client.uploadImageWithFilename(
+    final customUpload = await client.uploadImage(
       imageBytes: imageBytes,
       fileName: 'my-custom-image.jpg',
       contentType: 'image/jpeg',
@@ -63,16 +63,6 @@ Future<void> main() async {
       ),
     );
     print('   Downloaded ${transformedBytes.length} bytes (transformed)\n');
-
-    // Example 6: List all images
-    print('6. Listing all images...');
-    final images = await client.listImages();
-    print('   Found ${images.length} images:');
-    for (final image in images) {
-      print('   - ${image.originalName}');
-      print('     URL: ${image.url}');
-      print('     Size: ${image.size} bytes');
-    }
 
     // Example 7: Create temporary upload URL
     print('7. Creating temporary upload URL...');

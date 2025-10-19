@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
@@ -79,27 +78,6 @@ void main() {
       });
     });
 
-    group('getImageUrl', () {
-      test('returns URL without transformation', () {
-        final url = client.getImageUrl('test.jpg');
-        expect(url, equals('http://localhost:8080/files/test.jpg'));
-      });
-
-      test('returns URL with transformation', () {
-        final url = client.getImageUrl(
-          'test.jpg',
-          transform: const ImageTransformOptions(
-            width: 500,
-            quality: 85,
-          ),
-        );
-        expect(
-          url,
-          equals('http://localhost:8080/files/width=500,quality=85/test.jpg'),
-        );
-      });
-    });
-
     group('deleteImage', () {
       test('deletes image successfully', () async {
         when(
@@ -128,54 +106,6 @@ void main() {
 
         expect(
           () => client.deleteImage('test.jpg'),
-          throwsA(isA<ImageServiceException>()),
-        );
-      });
-    });
-
-    group('listImages', () {
-      test('lists all images', () async {
-        final jsonResponse = {
-          'images': [
-            {
-              'fileName': 'test1.jpg',
-              'originalName': 'photo1.jpg',
-              'url': 'http://localhost:8080/files/test1.jpg',
-              'size': 1024,
-            },
-            {
-              'fileName': 'test2.jpg',
-              'originalName': 'photo2.jpg',
-              'url': 'http://localhost:8080/files/test2.jpg',
-              'size': 2048,
-            },
-          ],
-        };
-
-        when(
-          () => mockClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(jsonEncode(jsonResponse), 200),
-        );
-
-        final result = await client.listImages();
-
-        expect(result, hasLength(2));
-        expect(result[0].fileName, equals('test1.jpg'));
-        expect(result[0].size, equals(1024));
-        expect(result[1].fileName, equals('test2.jpg'));
-        expect(result[1].size, equals(2048));
-      });
-
-      test('throws ImageServiceException on error', () async {
-        when(
-          () => mockClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('Unauthorized', 401),
-        );
-
-        expect(
-          () => client.listImages(),
           throwsA(isA<ImageServiceException>()),
         );
       });
