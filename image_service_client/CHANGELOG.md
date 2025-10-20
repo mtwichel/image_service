@@ -5,6 +5,31 @@ All notable changes to the Image Service Client will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.1-dev.5] - 2025-10-20
+
+### Changed
+
+- **BREAKING: Removed bucket support**: Removed all bucket-related functionality
+  - Removed `bucket` parameter from `uploadImage()` (previously `uploadImageWithFilename()`)
+  - Removed `bucket` parameter from `uploadImageFromUrl()`
+  - Removed `bucket` field from `ImageMetadata` model
+  - Removed `bucket` field from `UploadResponse` model
+  - All images now stored in root directory without bucket organization
+  - Endpoint paths changed from `/files/{bucket}/` to `/files/`
+- **BREAKING: Renamed method**: `uploadImageWithFilename()` → `uploadImage()`
+  - Simplifies API by using `uploadImage()` for direct filename uploads
+  - `uploadImageWithToken()` remains for token-based uploads
+- **BREAKING: Updated temporary upload token endpoints**:
+  - `createTemporaryUploadUrl()` now uses `/upload-tokens` (was `/files/upload-tokens`)
+  - `uploadImageWithToken()` now uses `/upload-tokens/{token}` (was `/files/upload-tokens/{token}`)
+  - Aligns with server's simplified routing structure
+
+### Removed
+
+- **BREAKING: Removed `listImages()` method**
+  - Method for listing all images has been removed
+  - Users should manage image metadata through their own systems
+
 ## [0.0.1-dev.4] - 2025-10-20
 
 ### Added
@@ -89,8 +114,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - API key authentication via x-api-key header
 - Support for custom HTTP client for testing and proxy configurations
-
-[0.0.1-dev.4]: https://github.com/mtwichel/image_service/compare/v0.0.1-dev.3...v0.0.1-dev.4
-[0.0.1-dev.3]: https://github.com/mtwichel/image_service/compare/v0.0.1-dev.2...v0.0.1-dev.3
-[0.0.1-dev.2]: https://github.com/mtwichel/image_service/compare/v0.0.1-dev.1...v0.0.1-dev.2
-[0.0.1-dev.1]: https://github.com/mtwichel/image_service/releases/tag/v0.0.1-dev.1

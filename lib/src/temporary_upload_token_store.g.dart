@@ -19,7 +19,7 @@ class TokenEntryAdapter extends TypeAdapter<_TokenEntry> {
     return _TokenEntry(
       createdAt: fields[0] as DateTime,
       expiresAt: fields[1] as DateTime,
-      bucket: fields[2] as String?,
+      fileName: fields[2] as String,
     );
   }
 
@@ -32,7 +32,7 @@ class TokenEntryAdapter extends TypeAdapter<_TokenEntry> {
       ..writeByte(1)
       ..write(obj.expiresAt)
       ..writeByte(2)
-      ..write(obj.bucket);
+      ..write(obj.fileName);
   }
 
   @override

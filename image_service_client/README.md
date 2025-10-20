@@ -7,13 +7,12 @@ A Dart client library for interacting with the Image Service server. Provides a 
 
 ## Features
 
-- 📤 **Upload Images** - Multipart form upload or binary PUT with custom filename
+- 📤 **Upload Images** - Direct binary upload with custom filename
 - 🌐 **Upload from URL** - Fetch and store images from public URLs
 - ⏰ **Temporary Upload URLs** - Generate secure, single-use tokens for client-side uploads
-- 📥 **Retrieve Images** - Get original or transformed versions
+- 📥 **Retrieve Images** - Get unmodified or transformed versions
 - 🎨 **Transform Images** - On-the-fly resizing and quality adjustment
 - 🗑️ **Delete Images** - Remove images from the server
-- 📋 **List Images** - Get all stored images with metadata
 - 🔒 **Authenticated** - Built-in API key authentication
 - 🧪 **Testable** - Supports dependency injection for testing
 
@@ -41,31 +40,19 @@ final client = ImageServiceClient(
 
 ### Upload an Image
 
-**Using multipart form (POST):**
+**Direct upload with custom filename:**
 
 ```dart
 final imageBytes = await File('photo.jpg').readAsBytes();
 
 final response = await client.uploadImage(
   imageBytes: imageBytes,
-  fileName: 'photo.jpg', // optional
-);
-
-print('Uploaded: ${response.url}');
-```
-
-**With custom filename (PUT):**
-
-```dart
-final imageBytes = await File('photo.jpg').readAsBytes();
-
-final response = await client.uploadImageWithFilename(
-  imageBytes: imageBytes,
   fileName: 'my-custom-name.jpg',
-  contentType: 'image/jpeg',
+  contentType: 'image/jpeg', // optional
 );
 
 print('Uploaded: ${response.url}');
+print('File name: ${response.fileName}');
 ```
 
 **Using temporary upload token (no API key needed):**
@@ -74,7 +61,9 @@ Temporary upload URLs allow you to generate a secure, single-use token that clie
 
 ```dart
 // Step 1: Create a temporary upload URL (requires API key)
-final tempUrl = await client.createTemporaryUploadUrl();
+final tempUrl = await client.createTemporaryUploadUrl(
+  fileName: 'photo.jpg',
+);
 
 print('Token: ${tempUrl.token}');
 print('Expires in: ${tempUrl.expiresIn} seconds');
@@ -84,10 +73,10 @@ print('Expires in: ${tempUrl.expiresIn} seconds');
 final response = await client.uploadImageWithToken(
   token: tempUrl.token,
   imageBytes: imageBytes,
-  fileName: 'photo.jpg', // optional
 );
 
 print('Uploaded: ${response.url}');
+print('File name: ${response.fileName}');
 ```
 
 **Security Features:**
@@ -119,26 +108,17 @@ final response = await client.uploadImageFromUrl(
 );
 ```
 
-**With bucket:**
-
-```dart
-final response = await client.uploadImageFromUrl(
-  url: 'https://example.com/image.jpg',
-  bucket: 'avatars',
-);
-```
-
 **Features:**
 
 - Requires API key authentication
 - 10 second timeout for fetching the image
 - Returns 400 Bad Request if URL is invalid or unreachable
-- Supports optional custom filename and bucket parameters
+- Supports optional custom filename
 - Filename is extracted from URL if not provided
 
 ### Retrieve an Image
 
-**Get original image:**
+**Get image URL:**
 
 ```dart
 final bytes = await client.getImage('photo.jpg');
@@ -161,7 +141,7 @@ final bytes = await client.getImage(
 ### Get Image URLs
 
 ```dart
-// Original image URL
+// Image URL
 final url = client.getImageUrl('photo.jpg');
 print(url); // http://localhost:8080/files/photo.jpg
 
@@ -180,21 +160,15 @@ await client.deleteImage('photo.jpg');
 print('Image deleted!');
 ```
 
-### List All Images
-
-```dart
-final images = await client.listImages();
-
-for (final image in images) {
-  print('${image.originalName} - ${image.url} (${image.size} bytes)');
-}
-```
-
 ### Error Handling
 
 ```dart
 try {
-  await client.uploadImage(imageBytes: bytes);
+  await client.uploadImage(
+    imageBytes: bytes,
+    fileName: 'example.jpg',
+    contentType: 'image/jpeg',
+  );
 } on ImageServiceException catch (e) {
   print('Error: ${e.statusCode} - ${e.message}');
 }
@@ -235,18 +209,16 @@ Main client class for interacting with the Image Service.
 
 **Methods:**
 
-| Method                       | Description                     | Returns               |
-| ---------------------------- | ------------------------------- | --------------------- |
-| `uploadImage()`              | Upload image via multipart form | `UploadResponse`      |
-| `uploadImageWithFilename()`  | Upload with custom filename     | `UploadResponse`      |
-| `uploadImageFromUrl()`       | Upload image from public URL    | `UploadResponse`      |
-| `createTemporaryUploadUrl()` | Create single-use upload token  | `TemporaryUploadUrl`  |
-| `uploadImageWithToken()`     | Upload using temporary token    | `UploadResponse`      |
-| `getImage()`                 | Retrieve image bytes            | `Uint8List`           |
-| `getImageUrl()`              | Get image URL                   | `String`              |
-| `deleteImage()`              | Delete an image                 | `bool`                |
-| `listImages()`               | List all images                 | `List<ImageMetadata>` |
-| `dispose()`                  | Close HTTP client               | `void`                |
+| Method                       | Description                             | Returns              |
+| ---------------------------- | --------------------------------------- | -------------------- |
+| `uploadImage()`              | Upload image with custom filename (PUT) | `UploadResponse`     |
+| `uploadImageFromUrl()`       | Upload image from public URL            | `UploadResponse`     |
+| `createTemporaryUploadUrl()` | Create single-use upload token          | `TemporaryUploadUrl` |
+| `uploadImageWithToken()`     | Upload using temporary token            | `UploadResponse`     |
+| `getImage()`                 | Retrieve image bytes                    | `Uint8List`          |
+| `getImageUrl()`              | Get image URL                           | `String`             |
+| `deleteImage()`              | Delete an image                         | `bool`               |
+| `dispose()`                  | Close HTTP client                       | `void`               |
 
 ### ImageTransformOptions
 
@@ -264,12 +236,10 @@ Options for transforming images.
 
 - `url` - Public URL of uploaded image
 - `fileName` - Stored filename
-- `originalName` - Original filename
 
 **ImageMetadata**
 
 - `fileName` - Stored filename
-- `originalName` - Original filename
 - `url` - Public URL
 - `size` - File size in bytes
 
@@ -320,21 +290,16 @@ Future<void> main() async {
   final upload = await client.uploadImage(
     imageBytes: bytes,
     fileName: 'example.jpg',
+    contentType: 'image/jpeg',
   );
   print('Uploaded: ${upload.url}');
-
-  // List all images
-  print('\nAll images:');
-  final images = await client.listImages();
-  for (final image in images) {
-    print('- ${image.originalName}: ${image.url}');
-  }
+  print('File name: ${upload.fileName}');
 
   // Get a transformed version
   print('\nDownloading thumbnail...');
   final thumbnail = await client.getImage(
     upload.fileName,
-    transform: ImageTransformOptions(width: 200, quality: 80),
+    transform: const ImageTransformOptions(width: 200, quality: 80),
   );
   await File('thumbnail.jpg').writeAsBytes(thumbnail);
   print('Saved thumbnail!');

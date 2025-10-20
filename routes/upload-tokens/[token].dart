@@ -19,8 +19,8 @@ Future<Response> _onPost(RequestContext context, String token) async {
   final tokenStore = context.read<TemporaryUploadTokenStore>();
   final metadataStore = context.read<ImageMetadataStore>();
 
-  // Validate and consume the token (single-use), retrieve bucket if present
-  final (isValidToken, bucket) = await tokenStore.validateAndConsumeToken(
+  // Validate and consume the token (single-use)
+  final (isValidToken, fileName) = await tokenStore.validateAndConsumeToken(
     token,
   );
 
@@ -42,16 +42,19 @@ Future<Response> _onPost(RequestContext context, String token) async {
       );
     }
 
-    final bytes = await fileField.readAsBytes();
-    final originalFileName = fileField.name.isNotEmpty ? fileField.name : '';
+    final bytes = fileField.openRead();
 
-    // Process the upload using shared utilities with metadata store
-    // Bucket comes from the token, not from the upload request
+    if (fileName == null) {
+      return Response(
+        statusCode: HttpStatus.badRequest,
+        body: 'Unable to determine filename',
+      );
+    }
+
     final result = await processImageUpload(
       bytes: bytes,
-      originalFileName: originalFileName,
+      fileName: fileName,
       metadataStore: metadataStore,
-      bucket: bucket,
     );
 
     return Response.json(body: result.toJson(), statusCode: HttpStatus.created);

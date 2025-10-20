@@ -10,7 +10,6 @@ class ImageMetadata with ImageMetadataMappable {
   /// {@macro image_metadata}
   const ImageMetadata({
     required this.fileName,
-    required this.originalName,
     required this.url,
     required this.size,
   });
@@ -25,9 +24,6 @@ class ImageMetadata with ImageMetadataMappable {
 
   /// The stored filename
   final String fileName;
-
-  /// The original filename when uploaded
-  final String originalName;
 
   /// The public URL to access the image
   final String url;

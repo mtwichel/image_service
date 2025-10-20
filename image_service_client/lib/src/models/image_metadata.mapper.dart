@@ -26,11 +26,6 @@ class ImageMetadataMapper extends ClassMapperBase<ImageMetadata> {
     'fileName',
     _$fileName,
   );
-  static String _$originalName(ImageMetadata v) => v.originalName;
-  static const Field<ImageMetadata, String> _f$originalName = Field(
-    'originalName',
-    _$originalName,
-  );
   static String _$url(ImageMetadata v) => v.url;
   static const Field<ImageMetadata, String> _f$url = Field('url', _$url);
   static int _$size(ImageMetadata v) => v.size;
@@ -39,7 +34,6 @@ class ImageMetadataMapper extends ClassMapperBase<ImageMetadata> {
   @override
   final MappableFields<ImageMetadata> fields = const {
     #fileName: _f$fileName,
-    #originalName: _f$originalName,
     #url: _f$url,
     #size: _f$size,
   };
@@ -47,7 +41,6 @@ class ImageMetadataMapper extends ClassMapperBase<ImageMetadata> {
   static ImageMetadata _instantiate(DecodingData data) {
     return ImageMetadata(
       fileName: data.dec(_f$fileName),
-      originalName: data.dec(_f$originalName),
       url: data.dec(_f$url),
       size: data.dec(_f$size),
     );
@@ -115,7 +108,7 @@ extension ImageMetadataValueCopy<$R, $Out>
 
 abstract class ImageMetadataCopyWith<$R, $In extends ImageMetadata, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
-  $R call({String? fileName, String? originalName, String? url, int? size});
+  $R call({String? fileName, String? url, int? size});
   ImageMetadataCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
 }
 
@@ -128,19 +121,16 @@ class _ImageMetadataCopyWithImpl<$R, $Out>
   late final ClassMapperBase<ImageMetadata> $mapper =
       ImageMetadataMapper.ensureInitialized();
   @override
-  $R call({String? fileName, String? originalName, String? url, int? size}) =>
-      $apply(
-        FieldCopyWithData({
-          if (fileName != null) #fileName: fileName,
-          if (originalName != null) #originalName: originalName,
-          if (url != null) #url: url,
-          if (size != null) #size: size,
-        }),
-      );
+  $R call({String? fileName, String? url, int? size}) => $apply(
+    FieldCopyWithData({
+      if (fileName != null) #fileName: fileName,
+      if (url != null) #url: url,
+      if (size != null) #size: size,
+    }),
+  );
   @override
   ImageMetadata $make(CopyWithData data) => ImageMetadata(
     fileName: data.get(#fileName, or: $value.fileName),
-    originalName: data.get(#originalName, or: $value.originalName),
     url: data.get(#url, or: $value.url),
     size: data.get(#size, or: $value.size),
   );

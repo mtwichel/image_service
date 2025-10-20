@@ -8,7 +8,11 @@ part 'temporary_upload_token_store.g.dart';
 /// A token entry with expiration information
 @HiveType(typeId: 0)
 class _TokenEntry {
-  _TokenEntry({required this.createdAt, required this.expiresAt, this.bucket});
+  _TokenEntry({
+    required this.createdAt,
+    required this.expiresAt,
+    required this.fileName,
+  });
 
   @HiveField(0)
   final DateTime createdAt;
@@ -17,7 +21,7 @@ class _TokenEntry {
   final DateTime expiresAt;
 
   @HiveField(2)
-  final String? bucket;
+  final String fileName;
 
   bool get isExpired => DateTime.now().isAfter(expiresAt);
 }
@@ -34,22 +38,16 @@ class TemporaryUploadTokenStore {
   ///
   /// [tokenDuration] - How long tokens remain valid (default: 15 minutes)
   /// [random] - Random number generator (defaults to Random.secure())
-  /// [boxName] - Name of the Hive box (default: 'upload_tokens')
   TemporaryUploadTokenStore({
     this.tokenDuration = const Duration(minutes: 15),
     Random? random,
-    String boxName = 'upload_tokens',
-  }) : _random = random ?? Random.secure(),
-       _boxName = boxName;
+  }) : _random = random ?? Random.secure();
 
   /// Duration for which tokens are valid
   final Duration tokenDuration;
 
   /// Secure random number generator for token creation
   final Random _random;
-
-  /// Name of the Hive box
-  final String _boxName;
 
   /// Hive box for token storage
   Box<_TokenEntry>? _box;
@@ -62,7 +60,7 @@ class TemporaryUploadTokenStore {
     if (!Hive.isAdapterRegistered(0)) {
       Hive.registerAdapter(TokenEntryAdapter());
     }
-    _box = await Hive.openBox<_TokenEntry>(_boxName);
+    _box = await Hive.openBox<_TokenEntry>('upload_tokens');
 
     // Clean up expired tokens on initialization
     await _cleanupExpiredTokens();
@@ -80,10 +78,8 @@ class TemporaryUploadTokenStore {
 
   /// Generates a new cryptographically secure token
   ///
-  /// [bucket] - Optional bucket name for organized image storage
-  ///
   /// Returns a tuple of (token, expiresAt)
-  Future<(String, DateTime)> generateToken({String? bucket}) async {
+  Future<(String, DateTime)> generateToken({required String fileName}) async {
     _ensureInitialized();
 
     // Generate 32 random bytes for security
@@ -95,7 +91,7 @@ class TemporaryUploadTokenStore {
 
     await _box!.put(
       token,
-      _TokenEntry(createdAt: now, expiresAt: expiresAt, bucket: bucket),
+      _TokenEntry(createdAt: now, expiresAt: expiresAt, fileName: fileName),
     );
 
     return (token, expiresAt);
@@ -103,7 +99,7 @@ class TemporaryUploadTokenStore {
 
   /// Validates and consumes a token (single-use)
   ///
-  /// Returns a tuple of (isValid, bucket).
+  /// Returns a tuple of (isValid, fileName).
   /// The token is removed from the store after this call.
   Future<(bool, String?)> validateAndConsumeToken(String token) async {
     _ensureInitialized();
@@ -114,15 +110,13 @@ class TemporaryUploadTokenStore {
       return (false, null);
     }
 
-    final bucket = entry.bucket;
-
     // Remove the token (single-use)
     await _box!.delete(token);
 
     // Clean up expired tokens opportunistically
     await _cleanupExpiredTokens();
 
-    return (!entry.isExpired, bucket);
+    return (!entry.isExpired, entry.fileName);
   }
 
   /// Removes all expired tokens from the store

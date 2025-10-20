@@ -86,34 +86,6 @@ Future<Response> onRequest(RequestContext context) async {
                                 Label(
                                   className:
                                       'block text-sm font-medium text-gray-700 mb-2',
-                                  children: [const Text('Bucket (Optional)')],
-                                ),
-                                Input(
-                                  className:
-                                      'w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-                                  attributes: {
-                                    'type': 'text',
-                                    'name': 'bucket',
-                                    'placeholder':
-                                        'Enter bucket name for organization...',
-                                    'id': 'bucket-input',
-                                  },
-                                ),
-                                P(
-                                  className: 'mt-1 text-xs text-gray-500',
-                                  children: [
-                                    const Text(
-                                      'Leave empty for default storage or specify a bucket to organize images',
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            Div(
-                              children: [
-                                Label(
-                                  className:
-                                      'block text-sm font-medium text-gray-700 mb-2',
                                   children: [const Text('Choose Image File')],
                                 ),
                                 Div(
@@ -202,7 +174,7 @@ Future<Response> onRequest(RequestContext context) async {
                               attributes: {
                                 'type': 'text',
                                 'id': 'image-filter',
-                                'placeholder': 'Search by original filename...',
+                                'placeholder': 'Search by filename...',
                               },
                             ),
                             Button(

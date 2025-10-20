@@ -66,12 +66,7 @@ Future<Response> _onGet(RequestContext context) async {
                     Th(
                       className:
                           'p-4 text-left font-semibold uppercase tracking-wider text-sm',
-                      children: [const Text('Original Name')],
-                    ),
-                    Th(
-                      className:
-                          'p-4 text-left font-semibold uppercase tracking-wider text-sm',
-                      children: [const Text('Bucket')],
+                      children: [const Text('Filename')],
                     ),
                     Th(
                       className:
@@ -105,39 +100,19 @@ Future<Response> _onGet(RequestContext context) async {
                             attributes: {
                               'src':
                                   '/files/height=100/${file.path.split('/').last}',
-                              'alt': getDisplayName(
-                                directory.path,
-                                file.path.split('/').last,
-                              ),
+                              'alt': file.path.split('/').last,
                             },
                           ),
                         ],
                       ),
                       Td(
                         className: 'p-4 border-b border-gray-200 align-middle',
-                        attributes: {'data-label': 'Original Name'},
+                        attributes: {'data-label': 'Filename'},
                         children: [
                           Div(
                             className:
                                 'font-medium text-sm text-gray-800 break-all',
-                            children: [
-                              Text(
-                                getDisplayName(
-                                  directory.path,
-                                  file.path.split('/').last,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      Td(
-                        className: 'p-4 border-b border-gray-200 align-middle',
-                        attributes: {'data-label': 'Bucket'},
-                        children: [
-                          Div(
-                            className: 'text-sm text-gray-600',
-                            children: [const Text('(default)')],
+                            children: [Text(file.path.split('/').last)],
                           ),
                         ],
                       ),
@@ -174,7 +149,7 @@ Future<Response> _onGet(RequestContext context) async {
                                     'text-red-500 font-medium py-2 px-3 border border-red-500 rounded text-sm transition-all duration-200 hover:bg-red-500 hover:text-white cursor-pointer text-center',
                                 attributes: {
                                   'hx-delete':
-                                      '/files/${file.path.split('/').last}',
+                                      '/dashboard/files/${file.path.split('/').last}',
                                   'hx-target': 'closest tr',
                                   'hx-swap': 'outerHTML',
                                   'hx-confirm':
@@ -218,31 +193,20 @@ Future<Response> _onPost(RequestContext context) async {
       );
     }
 
-    final bytes = await fileField.readAsBytes();
-    final originalFileName = fileField.name.isNotEmpty ? fileField.name : '';
-
-    // Get optional bucket parameter from form data or query string
-    final bucket =
-        formData.fields['bucket'] ??
-        context.request.uri.queryParameters['bucket'];
+    final bytes = fileField.openRead();
+    final fileName = fileField.name.isNotEmpty ? fileField.name : '';
 
     final metadataStore = context.read<ImageMetadataStore>();
 
     // Process the upload using shared utilities
     final result = await processImageUpload(
       bytes: bytes,
-      originalFileName: originalFileName,
+      fileName: fileName,
       metadataStore: metadataStore,
-      bucket: bucket,
     );
 
-    // Construct file path based on bucket
-    final filePath = bucket != null && bucket.isNotEmpty
-        ? '/files/$bucket/${result.secureFileName}'
-        : '/files/${result.secureFileName}';
-    final previewPath = bucket != null && bucket.isNotEmpty
-        ? '/files/$bucket/height=100/${result.secureFileName}'
-        : '/files/height=100/${result.secureFileName}';
+    final filePath = '/files/${result.fileName}';
+    final previewPath = '/files/height=100/${result.fileName}';
 
     // Return a single table row for the newly uploaded file
     return HtmlResponse(
@@ -258,31 +222,17 @@ Future<Response> _onPost(RequestContext context) async {
               Img(
                 className:
                     'rounded-lg shadow-md transition-transform duration-200 max-w-30 h-auto hover:scale-110',
-                attributes: {'src': previewPath, 'alt': result.originalName},
+                attributes: {'src': previewPath, 'alt': result.fileName},
               ),
             ],
           ),
           Td(
             className: 'p-4 border-b border-gray-200 align-middle',
-            attributes: {'data-label': 'Original Name'},
+            attributes: {'data-label': 'File Name'},
             children: [
               Div(
                 className: 'font-medium text-sm text-gray-800 break-all',
-                children: [Text(result.originalName)],
-              ),
-            ],
-          ),
-          Td(
-            className: 'p-4 border-b border-gray-200 align-middle',
-            attributes: {'data-label': 'Bucket'},
-            children: [
-              Div(
-                className: 'text-sm text-gray-600',
-                children: [
-                  Text(
-                    bucket != null && bucket.isNotEmpty ? bucket : '(default)',
-                  ),
-                ],
+                children: [Text(result.fileName)],
               ),
             ],
           ),
@@ -314,7 +264,7 @@ Future<Response> _onPost(RequestContext context) async {
                     className:
                         'text-red-500 font-medium py-2 px-3 border border-red-500 rounded text-sm transition-all duration-200 hover:bg-red-500 hover:text-white cursor-pointer text-center',
                     attributes: {
-                      'hx-delete': filePath,
+                      'hx-delete': '/dashboard/files/$fileName',
                       'hx-target': 'closest tr',
                       'hx-swap': 'outerHTML',
                       'hx-confirm':

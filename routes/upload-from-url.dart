@@ -28,8 +28,7 @@ Future<Response> _onPost(RequestContext context) async {
     // Parse JSON body
     final body = await context.request.json() as Map<String, dynamic>;
     final imageUrl = body['url'] as String?;
-    final fileName = body['fileName'] as String?;
-    final bucket = body['bucket'] as String?;
+    var fileName = body['fileName'] as String?;
 
     if (imageUrl == null || imageUrl.isEmpty) {
       return Response(
@@ -55,11 +54,25 @@ Future<Response> _onPost(RequestContext context) async {
       );
     }
 
+    if (fileName == null || fileName.isEmpty) {
+      final pathSegments = uri.pathSegments;
+      if (pathSegments.isNotEmpty) {
+        fileName = pathSegments.last;
+      }
+    }
+
+    if (fileName == null || fileName.isEmpty) {
+      return Response(
+        statusCode: HttpStatus.badRequest,
+        body: 'Missing required field: fileName',
+      );
+    }
+
     // Fetch the image from the URL with 10 second timeout
     final client = http.Client();
     try {
       final response = await client
-          .get(uri)
+          .send(http.Request('GET', uri))
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode != 200) {
@@ -69,31 +82,16 @@ Future<Response> _onPost(RequestContext context) async {
         );
       }
 
-      final bytes = response.bodyBytes;
-
-      // Determine filename
-      String originalFileName;
-      if (fileName != null && fileName.isNotEmpty) {
-        originalFileName = fileName;
-      } else {
-        // Extract filename from URL path
-        final pathSegments = uri.pathSegments;
-        if (pathSegments.isNotEmpty) {
-          originalFileName = pathSegments.last;
-        } else {
-          originalFileName = 'image.jpg';
-        }
-      }
+      final bytesStream = response.stream;
 
       // Get metadata store from context
       final metadataStore = context.read<ImageMetadataStore>();
 
       // Process the upload using shared utilities
       final result = await processImageUpload(
-        bytes: bytes,
-        originalFileName: originalFileName,
+        bytes: bytesStream,
+        fileName: fileName,
         metadataStore: metadataStore,
-        bucket: bucket,
       );
 
       return Response.json(

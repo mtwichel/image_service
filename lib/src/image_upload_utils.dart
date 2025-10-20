@@ -1,6 +1,6 @@
-import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
-import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:image_service/src/metadata.dart';
 
@@ -10,9 +10,7 @@ const maxImageFileSize = 10 * 1024 * 1024;
 /// Image data directory path
 /// Uses absolute path for container environments, falls back to relative for
 /// local dev
-///
-/// [bucket] - Optional bucket name for organizing images into subdirectories
-String imageDirectory({String? bucket}) {
+String imageDirectory() {
   // In production (container), use absolute path
   // In development, use relative path
   const productionPath = '/app/data/images';
@@ -21,11 +19,6 @@ String imageDirectory({String? bucket}) {
   // Check if we're likely in a container by checking if /app exists
   final basePath = Directory('/app').existsSync() ? productionPath : devPath;
 
-  // If bucket is specified, append it to the path
-  if (bucket != null && bucket.isNotEmpty) {
-    return '$basePath/$bucket';
-  }
-
   return basePath;
 }
 
@@ -33,8 +26,8 @@ String imageDirectory({String? bucket}) {
 String get metadataDirectory {
   // In production (container), use absolute path
   // In development, use relative path
-  const productionPath = '/app/data/images';
-  const devPath = 'data/images';
+  const productionPath = '/app/data/metadata';
+  const devPath = 'data/metadata';
 
   // Check if we're likely in a container by checking if /app exists
   if (Directory('/app').existsSync()) {
@@ -87,16 +80,6 @@ bool isValidImageFile(List<int> bytes) {
   return false;
 }
 
-/// Generates a cryptographically secure filename
-///
-/// Format: {timestamp}_{random}
-/// Example: 1234567890_123456
-String generateSecureFileName() {
-  final timestamp = DateTime.now().millisecondsSinceEpoch;
-  final random = Random().nextInt(999999);
-  return '${timestamp}_$random';
-}
-
 /// Extracts and validates file extension from filename
 ///
 /// Returns a safe extension from the allowed list:
@@ -114,86 +97,22 @@ String getFileExtension(String filename) {
   return allowedExtensions.contains(extension) ? extension : '.jpg';
 }
 
-/// Saves metadata for an uploaded image
-///
-/// Creates a .meta file alongside the image containing:
-/// - originalName: The user-provided filename
-/// - uploadedAt: ISO8601 timestamp
-/// - secureFileName: The generated secure filename
-Future<void> saveMetadata(
-  String directoryPath,
-  String secureFileName,
-  String originalName,
-) async {
-  final metadataFile = File('$directoryPath/$secureFileName.meta');
-  final metadata = {
-    'originalName': originalName,
-    'uploadedAt': DateTime.now().toIso8601String(),
-    'secureFileName': secureFileName,
-  };
-  await metadataFile.writeAsString(jsonEncode(metadata));
-}
-
-/// Loads metadata for an image file
-///
-/// Returns null if metadata file doesn't exist or cannot be read
-Map<String, dynamic>? loadMetadata(
-  String directoryPath,
-  String secureFileName,
-) {
-  try {
-    final metadataFile = File('$directoryPath/$secureFileName.meta');
-    if (!metadataFile.existsSync()) return null;
-    final content = metadataFile.readAsStringSync();
-    return jsonDecode(content) as Map<String, dynamic>;
-  } catch (e) {
-    return null;
-  }
-}
-
-/// Gets the display name for a file (original name from metadata)
-///
-/// Falls back to secure filename if metadata is unavailable
-String getDisplayName(String directoryPath, String secureFileName) {
-  final metadata = loadMetadata(directoryPath, secureFileName);
-  return metadata?['originalName'] as String? ?? secureFileName;
-}
-
 /// Result of a successful image upload operation
 class ImageUploadResult {
   /// Creates an [ImageUploadResult]
-  const ImageUploadResult({
-    required this.secureFileName,
-    required this.originalName,
-    required this.fileSize,
-    this.bucket,
-  });
+  const ImageUploadResult({required this.fileName, required this.fileSize});
 
-  /// The generated secure filename
-  final String secureFileName;
-
-  /// The original filename provided by the user
-  final String originalName;
+  /// The file name
+  final String fileName;
 
   /// Size of the uploaded file in bytes
   final int fileSize;
 
-  /// Optional bucket name
-  final String? bucket;
-
   /// Converts to a JSON response map
   Map<String, dynamic> toJson() {
-    final url = bucket != null && bucket!.isNotEmpty
-        ? '/files/$bucket/$secureFileName'
-        : '/files/$secureFileName';
-
-    return {
-      'url': url,
-      'fileName': secureFileName,
-      'originalName': originalName,
-      'size': fileSize,
-      if (bucket != null) 'bucket': bucket,
-    };
+    final baseUrl = Platform.environment['BASE_URL'];
+    final url = '$baseUrl/files/$fileName';
+    return {'fileName': fileName, 'size': fileSize, 'url': url};
   }
 }
 
@@ -203,33 +122,74 @@ class ImageUploadResult {
 /// - File size validation (max 10MB)
 /// - Magic byte validation for file type
 /// - Checks for existing images with same filename
-/// - Secure filename generation (if needed)
 /// - File storage
 /// - Metadata storage
 ///
-/// [bucket] - Optional bucket name for organized storage
-///
-/// If an image with the same original filename already exists,
-/// it updates that existing file and returns the existing secure filename.
+/// If an image with the same  filename already exists,
+/// it updates that existing file and returns the existing file name.
 ///
 /// Returns [ImageUploadResult] on success
 /// Throws [ImageUploadException] on validation or storage failure
 Future<ImageUploadResult> processImageUpload({
-  required List<int> bytes,
-  required String originalFileName,
+  required Stream<List<int>> bytes,
+  required String fileName,
   required ImageMetadataStore metadataStore,
-  String? bucket,
 }) async {
-  // Security: Validate file size (max 10MB)
-  if (bytes.length > maxImageFileSize) {
-    throw const ImageUploadException(
-      statusCode: HttpStatus.requestEntityTooLarge,
-      message: 'File too large. Maximum size is 10MB.',
-    );
+  // Ensure the directory exists
+  final directory = Directory(imageDirectory());
+  if (!directory.existsSync()) {
+    directory.createSync(recursive: true);
+  }
+
+  final file = File('${directory.path}/$fileName');
+
+  // Track total bytes and collect first bytes for magic byte validation
+  var totalBytes = 0;
+  final firstBytesBuffer = <int>[];
+  const magicBytesLength = 12; // Enough to identify JPEG, PNG, GIF, WebP
+
+  // Transform the stream to validate size and collect first bytes
+  final validatedStream = bytes.map((chunk) {
+    totalBytes += chunk.length;
+
+    // Check size limit
+    if (totalBytes > maxImageFileSize) {
+      throw const ImageUploadException(
+        statusCode: HttpStatus.requestEntityTooLarge,
+        message: 'File too large. Maximum size is 10MB.',
+      );
+    }
+
+    // Collect first bytes for magic byte validation
+    if (firstBytesBuffer.length < magicBytesLength) {
+      final remaining = magicBytesLength - firstBytesBuffer.length;
+      final bytesToCollect = chunk.length < remaining
+          ? chunk.length
+          : remaining;
+      firstBytesBuffer.addAll(chunk.take(bytesToCollect));
+    }
+
+    return chunk;
+  });
+
+  try {
+    // Write the validated stream to file
+    await file.openWrite().addStream(validatedStream);
+  } catch (e) {
+    // Clean up partial file if validation failed
+    if (file.existsSync()) {
+      await file.delete();
+    }
+    rethrow;
   }
 
   // Security: Validate file type by checking magic bytes
-  if (!isValidImageFile(bytes)) {
+  // Only read the first few bytes we collected, not the entire file
+  if (!isValidImageFile(Uint8List.fromList(firstBytesBuffer))) {
+    // Clean up invalid file
+    if (file.existsSync()) {
+      await file.delete();
+    }
     throw const ImageUploadException(
       statusCode: HttpStatus.badRequest,
       message:
@@ -237,68 +197,15 @@ Future<ImageUploadResult> processImageUpload({
     );
   }
 
-  final originalName = originalFileName.isNotEmpty ? originalFileName : 'image';
-  final extension = getFileExtension(originalName);
-
-  // Ensure the directory exists (with bucket support)
-  final directory = Directory(imageDirectory(bucket: bucket));
-  if (!directory.existsSync()) {
-    directory.createSync(recursive: true);
-  }
-
-  // Check if an image with the same original filename exists in this bucket
-  final existingMetadata = metadataStore.findByOriginalNameAndBucket(
-    originalName,
-    bucket: bucket,
+  // Update metadata with new uploadedAt timestamp
+  final updatedMetadata = ImageMetadata(
+    fileName: fileName,
+    uploadedAt: DateTime.now(),
+    fileSize: totalBytes,
   );
+  await metadataStore.saveOrUpdateMetadata(updatedMetadata);
 
-  String secureFileName;
-
-  if (existingMetadata != null) {
-    // File already exists - update the existing file and metadata
-    secureFileName = existingMetadata.secureFileName;
-
-    // Update the existing file
-    final file = File('${directory.path}/$secureFileName');
-    await file.writeAsBytes(bytes);
-
-    // Update metadata with new uploadedAt timestamp
-    final updatedMetadata = ImageMetadata(
-      originalName: originalName,
-      secureFileName: secureFileName,
-      uploadedAt: DateTime.now(),
-      fileSize: bytes.length,
-      bucket: bucket,
-    );
-    await metadataStore.saveOrUpdateMetadata(updatedMetadata);
-  } else {
-    // New file - create new secure filename
-    secureFileName = '${generateSecureFileName()}$extension';
-
-    // Save the file with secure filename
-    final file = File('${directory.path}/$secureFileName');
-    await file.writeAsBytes(bytes);
-
-    // Save new metadata
-    final metadata = ImageMetadata(
-      originalName: originalName,
-      secureFileName: secureFileName,
-      uploadedAt: DateTime.now(),
-      fileSize: bytes.length,
-      bucket: bucket,
-    );
-    await metadataStore.saveOrUpdateMetadata(metadata);
-  }
-
-  // Save legacy .meta file for backward compatibility
-  await saveMetadata(directory.path, secureFileName, originalName);
-
-  return ImageUploadResult(
-    secureFileName: secureFileName,
-    originalName: originalName,
-    fileSize: bytes.length,
-    bucket: bucket,
-  );
+  return ImageUploadResult(fileName: fileName, fileSize: totalBytes);
 }
 
 /// Exception thrown during image upload processing

@@ -8,14 +8,12 @@ void main() {
   group('ImageMetadata', () {
     test('can be created with all fields', () {
       final metadata = ImageMetadata(
-        originalName: 'test.jpg',
-        secureFileName: '1234567890_123456.jpg',
+        fileName: 'test.jpg',
         uploadedAt: DateTime(2024),
         fileSize: 1024,
       );
 
-      expect(metadata.originalName, 'test.jpg');
-      expect(metadata.secureFileName, '1234567890_123456.jpg');
+      expect(metadata.fileName, 'test.jpg');
       expect(metadata.uploadedAt, DateTime(2024));
       expect(metadata.fileSize, 1024);
     });
@@ -38,24 +36,22 @@ void main() {
       await tempDir.delete(recursive: true);
     });
 
-    test('can save and retrieve metadata by original name', () async {
+    test('can save and retrieve metadata by file name', () async {
       final metadata = ImageMetadata(
-        originalName: 'photo.jpg',
-        secureFileName: 'secure123.jpg',
+        fileName: 'photo.jpg',
         uploadedAt: DateTime(2024),
         fileSize: 2048,
       );
 
       await store.saveOrUpdateMetadata(metadata);
 
-      final retrieved = store.findByOriginalName('photo.jpg');
+      final retrieved = store.findByName('photo.jpg');
       expect(retrieved, isNotNull);
-      expect(retrieved!.originalName, 'photo.jpg');
-      expect(retrieved.secureFileName, 'secure123.jpg');
+      expect(retrieved!.fileName, 'photo.jpg');
     });
 
     test('returns null when metadata not found', () {
-      final retrieved = store.findByOriginalName('nonexistent.jpg');
+      final retrieved = store.findByName('nonexistent.jpg');
       expect(retrieved, isNull);
     });
   });
