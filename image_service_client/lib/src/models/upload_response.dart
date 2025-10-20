@@ -11,7 +11,6 @@ class UploadResponse with UploadResponseMappable {
   const UploadResponse({
     required this.url,
     required this.fileName,
-    this.originalName,
   });
 
   /// Creates an [UploadResponse] from JSON
@@ -27,7 +26,4 @@ class UploadResponse with UploadResponseMappable {
 
   /// The stored filename
   final String fileName;
-
-  /// The original filename when uploaded
-  final String? originalName;
 }

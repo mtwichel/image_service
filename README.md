@@ -15,7 +15,6 @@ A high-performance image storage and serving service built with Dart and Dart Fr
 - 🚀 **High Performance** - Built-in caching headers and optimized delivery
 - 🐳 **Docker Ready** - Production-ready Dockerfile included with pre-built images
 - 🔄 **CORS Support** - Cross-origin requests enabled for easy integration
-- 📝 **Metadata Storage** - Preserves original filenames with secure storage
 - 📦 **Client Library** - Official Dart client library available on [pub.dev](https://pub.dev/packages/image_service_client)
 
 ## Prerequisites
@@ -407,7 +406,6 @@ When running in development mode (`dart_frog dev`), the service automatically re
 Images are stored in `data/images/` with two files per image:
 
 - `{timestamp}_{random}.{ext}` - The actual image file
-- `{timestamp}_{random}.{ext}.meta` - JSON metadata with original filename
 
 ## Production Deployment
 
@@ -466,15 +464,3 @@ volumes:
 - Set up monitoring and logging
 - Configure firewall rules
 - Use CDN for image delivery (CloudFlare, Fastly, etc.)
-
-## License
-
-[Add your license here]
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Support
-
-For issues and questions, please open an issue on the GitHub repository.

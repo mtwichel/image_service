@@ -40,26 +40,21 @@ class ImageServiceClient {
   /// [imageBytes] - The image file bytes
   /// [fileName] - The desired filename (must include extension)
   /// [contentType] - MIME type (e.g., 'image/jpeg', 'image/png')
-  /// [bucket] - Optional bucket name for organizing images
   ///
   /// Returns [UploadResponse] with the URL and metadata
   ///
   /// Throws [ImageServiceException] on failure
-  Future<UploadResponse> uploadImageWithFilename({
+  Future<UploadResponse> uploadImage({
     required Uint8List imageBytes,
     required String fileName,
-    required String contentType,
-    String? bucket,
+    String? contentType,
   }) async {
-    final path = bucket != null && bucket.isNotEmpty
-        ? '/files/$bucket/$fileName'
-        : '/files/$fileName';
-    final uri = Uri.parse('$baseUrl$path');
+    final uri = Uri.parse('$baseUrl/files/$fileName');
     final response = await _httpClient.put(
       uri,
       headers: {
         ..._authHeaders,
-        'Content-Type': contentType,
+        'Content-Type': ?contentType,
       },
       body: imageBytes,
     );
@@ -83,7 +78,6 @@ class ImageServiceClient {
   /// [url] - The public URL of the image to upload
   /// [fileName] - Optional custom filename (if not provided, extracted from
   /// URL)
-  /// [bucket] - Optional bucket name for organizing images
   ///
   /// Returns [UploadResponse] with the URL and metadata
   ///
@@ -91,13 +85,11 @@ class ImageServiceClient {
   Future<UploadResponse> uploadImageFromUrl({
     required String url,
     String? fileName,
-    String? bucket,
   }) async {
-    final uri = Uri.parse('$baseUrl/files/upload-from-url');
+    final uri = Uri.parse('$baseUrl/upload-from-url');
     final body = <String, dynamic>{
       'url': url,
       if (fileName != null && fileName.isNotEmpty) 'fileName': fileName,
-      if (bucket != null && bucket.isNotEmpty) 'bucket': bucket,
     };
 
     final response = await _httpClient.post(
@@ -124,7 +116,6 @@ class ImageServiceClient {
   ///
   /// [fileName] - The filename of the image
   /// [transform] - Optional transformation options
-  /// [bucket] - Optional bucket name where the image is stored
   ///
   /// Returns the image bytes
   ///
@@ -132,10 +123,9 @@ class ImageServiceClient {
   Future<Uint8List> getImage(
     String fileName, {
     ImageTransformOptions? transform,
-    String? bucket,
   }) async {
     final uri = Uri.parse(
-      getImageUrl(fileName, transform: transform, bucket: bucket),
+      getImageUrl(fileName, transform: transform),
     );
     final response = await _httpClient.get(uri);
 
@@ -153,42 +143,28 @@ class ImageServiceClient {
   ///
   /// [fileName] - The filename of the image
   /// [transform] - Optional transformation options
-  /// [bucket] - Optional bucket name where the image is stored
   ///
   /// Returns the complete URL
   String getImageUrl(
     String fileName, {
     ImageTransformOptions? transform,
-    String? bucket,
   }) {
-    if (bucket != null && bucket.isNotEmpty) {
-      if (transform != null && transform.hasTransformations) {
-        final properties = transform.toPropertiesString();
-        return '$baseUrl/files/$bucket/$properties/$fileName';
-      }
-      return '$baseUrl/files/$bucket/$fileName';
-    } else {
-      if (transform != null && transform.hasTransformations) {
-        final properties = transform.toPropertiesString();
-        return '$baseUrl/files/$properties/$fileName';
-      }
-      return '$baseUrl/files/$fileName';
+    if (transform != null && transform.hasTransformations) {
+      final properties = transform.toPropertiesString();
+      return '$baseUrl/files/$properties/$fileName';
     }
+    return '$baseUrl/files/$fileName';
   }
 
   /// Deletes an image by filename
   ///
   /// [fileName] - The filename of the image to delete
-  /// [bucket] - Optional bucket name where the image is stored
   ///
   /// Returns true if successful
   ///
   /// Throws [ImageServiceException] on failure
-  Future<bool> deleteImage(String fileName, {String? bucket}) async {
-    final path = bucket != null && bucket.isNotEmpty
-        ? '/files/$bucket/$fileName'
-        : '/files/$fileName';
-    final uri = Uri.parse('$baseUrl$path');
+  Future<bool> deleteImage(String fileName) async {
+    final uri = Uri.parse('$baseUrl/files/$fileName');
     final response = await _httpClient.delete(
       uri,
       headers: _authHeaders,
@@ -204,53 +180,25 @@ class ImageServiceClient {
     );
   }
 
-  /// Lists all images stored in the service
-  ///
-  /// Returns a list of [ImageMetadata]
-  ///
-  /// Throws [ImageServiceException] on failure
-  Future<List<ImageMetadata>> listImages() async {
-    final uri = Uri.parse('$baseUrl/files');
-    final response = await _httpClient.get(
-      uri,
-      headers: _authHeaders,
-    );
-
-    if (response.statusCode == 200) {
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      final images = json['images'] as List<dynamic>;
-      return images
-          .map((e) => ImageMetadata.fromMap(e as Map<String, dynamic>))
-          .toList();
-    }
-
-    throw ImageServiceException(
-      statusCode: response.statusCode,
-      message: response.body,
-    );
-  }
-
   /// Creates a temporary upload URL (requires authentication)
   ///
   /// Generates a single-use, time-limited (15 minutes) upload token that
   /// can be used to upload an image without requiring API key authentication.
   ///
-  /// [bucket] - Optional bucket name for organized image storage
-  ///
   /// Returns [TemporaryUploadUrl] with token and expiration information
   ///
   /// Throws [ImageServiceException] on failure
-  Future<TemporaryUploadUrl> createTemporaryUploadUrl({String? bucket}) async {
-    var uri = Uri.parse('$baseUrl/files/upload-tokens');
-
-    // Add bucket as query parameter if provided
-    if (bucket != null && bucket.isNotEmpty) {
-      uri = uri.replace(queryParameters: {'bucket': bucket});
-    }
+  Future<TemporaryUploadUrl> createTemporaryUploadUrl({
+    required String fileName,
+  }) async {
+    final uri = Uri.parse('$baseUrl/upload-tokens');
 
     final response = await _httpClient.post(
       uri,
       headers: _authHeaders,
+      body: jsonEncode({
+        'fileName': fileName,
+      }),
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -269,7 +217,6 @@ class ImageServiceClient {
   /// [token] - The temporary upload token obtained from
   ///           [createTemporaryUploadUrl]
   /// [imageBytes] - The image file bytes
-  /// [fileName] - Optional original filename (with extension)
   ///
   /// Returns [UploadResponse] with the URL and metadata
   ///
@@ -279,16 +226,11 @@ class ImageServiceClient {
   Future<UploadResponse> uploadImageWithToken({
     required String token,
     required Uint8List imageBytes,
-    String? fileName,
   }) async {
-    final uri = Uri.parse('$baseUrl/files/upload-tokens/$token');
+    final uri = Uri.parse('$baseUrl/upload-tokens/$token');
     final request = http.MultipartRequest('POST', uri)
       ..files.add(
-        http.MultipartFile.fromBytes(
-          'file',
-          imageBytes,
-          filename: fileName,
-        ),
+        http.MultipartFile.fromBytes('file', imageBytes),
       );
 
     final streamedResponse = await _httpClient.send(request);

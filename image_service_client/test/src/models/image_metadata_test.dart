@@ -6,7 +6,6 @@ void main() {
     test('fromJson parses correctly', () {
       final json = {
         'fileName': 'test.jpg',
-        'originalName': 'photo.jpg',
         'url': 'http://localhost:8080/files/test.jpg',
         'size': 1024,
       };
@@ -14,7 +13,6 @@ void main() {
       final metadata = ImageMetadata.fromMap(json);
 
       expect(metadata.fileName, equals('test.jpg'));
-      expect(metadata.originalName, equals('photo.jpg'));
       expect(metadata.url, equals('http://localhost:8080/files/test.jpg'));
       expect(metadata.size, equals(1024));
     });
@@ -22,7 +20,6 @@ void main() {
     test('toJson serializes correctly', () {
       const metadata = ImageMetadata(
         fileName: 'test.jpg',
-        originalName: 'photo.jpg',
         url: 'http://localhost:8080/files/test.jpg',
         size: 1024,
       );
@@ -30,7 +27,6 @@ void main() {
       final json = metadata.toMap();
 
       expect(json['fileName'], equals('test.jpg'));
-      expect(json['originalName'], equals('photo.jpg'));
       expect(json['url'], equals('http://localhost:8080/files/test.jpg'));
       expect(json['size'], equals(1024));
     });

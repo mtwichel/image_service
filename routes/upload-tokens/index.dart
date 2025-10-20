@@ -21,25 +21,31 @@ Future<Response> _onPost(RequestContext context) async {
     return Response(statusCode: HttpStatus.unauthorized);
   }
 
-  // Get optional bucket parameter from query string or request body
-  final bucket = context.request.uri.queryParameters['bucket'];
+  final jsonData = await context.request.json();
 
-  // Get token store from context
+  final fileName = jsonData is Map ? jsonData['fileName'] as String? : null;
+
+  if (fileName == null || fileName.isEmpty) {
+    return Response(
+      statusCode: HttpStatus.badRequest,
+      body: 'Missing required field: fileName',
+    );
+  }
+
   final tokenStore = context.read<TemporaryUploadTokenStore>();
 
-  // Generate new token with optional bucket
-  final (token, expiresAt) = await tokenStore.generateToken(bucket: bucket);
+  final (token, expiresAt) = await tokenStore.generateToken(fileName: fileName);
 
-  // Calculate expiration time in seconds
   final expiresIn = expiresAt.difference(DateTime.now()).inSeconds;
+
+  final baseUrl = Platform.environment['BASE_URL'];
 
   // Return token information
   final response = {
     'token': token,
-    'uploadUrl': '/upload_tokens/$token',
+    'uploadUrl': '$baseUrl/upload-tokens/$token',
     'expiresAt': expiresAt.toIso8601String(),
     'expiresIn': expiresIn,
-    if (bucket != null) 'bucket': bucket,
   };
 
   return Response.json(body: response, statusCode: HttpStatus.created);

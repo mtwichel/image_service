@@ -17,28 +17,30 @@ Future<void> main() async {
     print('=== Image Service Client Example ===\n');
     final imageBytes = await _createSampleImage();
 
-    // Example 1: Basic image upload
-    print('1. Uploading image...');
-    final uploadResponse = await client.uploadImageWithFilename(
+    // Example 1: Upload image with direct PUT
+    print('1. Uploading image with direct PUT...');
+    final uploadResponse = await client.uploadImage(
       imageBytes: imageBytes,
       fileName: 'example-image.jpg',
       contentType: 'image/jpeg',
     );
-    print('   Uploaded: ${uploadResponse.url}\n');
+    print('   Uploaded: ${uploadResponse.url}');
+    print('   File name: ${uploadResponse.fileName}\n');
 
-    // Example 2: Upload with custom filename
-    print('2. Uploading with custom filename...');
-    final customUpload = await client.uploadImageWithFilename(
+    // Example 2: Upload another image
+    print('2. Uploading another image...');
+    final customUpload = await client.uploadImage(
       imageBytes: imageBytes,
-      fileName: 'my-custom-image.jpg',
-      contentType: 'image/jpeg',
+      fileName: 'my-custom-image.png',
+      contentType: 'image/png',
     );
-    print('   Uploaded: ${customUpload.url}\n');
+    print('   Uploaded: ${customUpload.url}');
+    print('   File name: ${customUpload.fileName}\n');
 
     // Example 3: Get image URLs
     print('3. Getting image URLs...');
-    final originalUrl = client.getImageUrl(uploadResponse.fileName);
-    print('   Original: $originalUrl');
+    final url = client.getImageUrl(uploadResponse.fileName);
+    print('   Url: $url');
 
     final thumbnailUrl = client.getImageUrl(
       uploadResponse.fileName,
@@ -63,36 +65,27 @@ Future<void> main() async {
     );
     print('   Downloaded ${transformedBytes.length} bytes (transformed)\n');
 
-    // Example 6: List all images
-    print('6. Listing all images...');
-    final images = await client.listImages();
-    print('   Found ${images.length} images:');
-    for (final image in images) {
-      print('   - ${image.originalName}');
-      print('     URL: ${image.url}');
-      print('     Size: ${image.size} bytes');
-    }
-
-    // Example 7: Create temporary upload URL
-    print('7. Creating temporary upload URL...');
-    final tempUrl = await client.createTemporaryUploadUrl();
+    // Example 6: Create temporary upload URL
+    print('6. Creating temporary upload URL...');
+    final tempUrl = await client.createTemporaryUploadUrl(
+      fileName: 'example-image.jpg',
+    );
     print('   Token: ${tempUrl.token}');
     print('   Upload URL: ${tempUrl.uploadUrl}');
     print('   Expires at: ${tempUrl.expiresAt}');
     print('   Expires in: ${tempUrl.expiresIn} seconds\n');
 
-    // Example 8: Upload with temporary token (no API key needed)
-    print('8. Uploading with temporary token...');
+    // Example 7: Upload with temporary token (no API key needed)
+    print('7. Uploading with temporary token...');
     final tokenUpload = await client.uploadImageWithToken(
       token: tempUrl.token,
       imageBytes: imageBytes,
-      fileName: 'token-upload-example.jpg',
     );
     print('   Uploaded: ${tokenUpload.url}');
     print('   File name: ${tokenUpload.fileName}\n');
 
-    // Example 9: Upload from public URL
-    print('9. Uploading from URL...');
+    // Example 8: Upload from public URL
+    print('8. Uploading from URL...');
     try {
       final urlUpload = await client.uploadImageFromUrl(
         url: 'https://picsum.photos/200/300',
@@ -104,15 +97,15 @@ Future<void> main() async {
       print('   Failed to upload from URL (this is okay if no internet): $e\n');
     }
 
-    // Example 10: Delete images
-    print('10. Deleting images...');
+    // Example 9: Delete images
+    print('9. Deleting images...');
     await client.deleteImage(uploadResponse.fileName);
     print('   Deleted: ${uploadResponse.fileName}');
     await client.deleteImage(tokenUpload.fileName);
     print('   Deleted: ${tokenUpload.fileName}\n');
 
-    // Example 11: Error handling
-    print('11. Error handling example...');
+    // Example 10: Error handling
+    print('10. Error handling example...');
     try {
       await client.getImage('non-existent-file.jpg');
     } on ImageServiceException catch (e) {

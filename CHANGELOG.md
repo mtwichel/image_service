@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.1-dev.5] - 2025-10-20
+
+### Changed
+
+#### Server
+
+- **BREAKING: Removed bucket support**: Removed all bucket-related functionality
+  - Removed `bucket` parameter from all upload endpoints
+  - Deleted `/files/{bucket}/{fileName}` endpoints (GET, PUT, DELETE)
+  - Deleted `/files/{bucket}/{propertiesString}/{fileName}` transformation endpoint
+  - All images now stored in root directory (`data/images/`)
+  - All file operations use `/files/{fileName}` paths only
+  - Simplified routing structure with no bucket organization
+- **BREAKING: Restructured upload token endpoints**:
+  - Moved from `/files/upload-tokens` to `/upload-tokens`
+  - `POST /upload-tokens` - Create temporary upload token (was `/files/upload-tokens`)
+  - `POST /upload-tokens/{token}` - Upload with token (was `/files/upload-tokens/{token}`)
+  - Aligns with cleaner API structure separating file operations from token management
+- **Updated `upload-from-url` endpoint path**:
+  - Now at `/upload-from-url` (was `/files/upload-from-url`)
+  - Removed `bucket` parameter support
+  - Maintains same functionality for URL-based uploads
+
+### Fixed
+
+#### Server
+
+- **Route conflicts resolved**: Fixed Dart Frog routing conflicts from bucket removal
+  - Properly organized route handlers in new directory structure
+  - Upload token routes moved to dedicated `/upload-tokens` directory
+
+### Performance
+
+#### Server
+
+- **Streaming image uploads**: Improved memory efficiency for image uploads
+  - `processImageUpload()` now uses `Stream<List<int>>` instead of loading entire file into memory
+  - File size validation happens during streaming (stops at 10MB limit)
+  - Magic byte validation uses only first 12 bytes instead of reading entire file
+  - Partial file cleanup on validation failure
+  - Significantly reduces memory usage for large file uploads
+
 ## [0.0.1-dev.4] - 2025-10-20
 
 ### Added
@@ -175,8 +217,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Image processing with `package:image`
 - MIME type detection with `package:mime`
 - HTML generation with `dart_frog_html`
-
-[0.0.1-dev.4]: https://github.com/mtwichel/image_service/compare/v0.0.1-dev.3...v0.0.1-dev.4
-[0.0.1-dev.3]: https://github.com/mtwichel/image_service/compare/v0.0.1-dev.2...v0.0.1-dev.3
-[0.0.1-dev.2]: https://github.com/mtwichel/image_service/compare/v0.0.1-dev.1...v0.0.1-dev.2
-[0.0.1-dev.1]: https://github.com/mtwichel/image_service/releases/tag/v0.0.1-dev.1

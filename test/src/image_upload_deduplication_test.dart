@@ -56,20 +56,18 @@ void main() {
 
     test('uploads new image and stores metadata', () async {
       final result = await processImageUpload(
-        bytes: pngBytes,
-        originalFileName: 'test.png',
+        bytes: Stream.value(pngBytes),
+        fileName: 'test.png',
         metadataStore: metadataStore,
       );
 
-      expect(result.originalName, 'test.png');
-      expect(result.secureFileName, endsWith('.png'));
+      expect(result.fileName, 'test.png');
       expect(result.fileSize, pngBytes.length);
 
       // Verify metadata was stored
-      final metadata = metadataStore.findByOriginalName('test.png');
+      final metadata = metadataStore.findByName('test.png');
       expect(metadata, isNotNull);
-      expect(metadata!.originalName, 'test.png');
-      expect(metadata.secureFileName, result.secureFileName);
+      expect(metadata!.fileName, 'test.png');
     });
 
     test(
@@ -77,13 +75,13 @@ void main() {
       () async {
         // First upload
         final result1 = await processImageUpload(
-          bytes: pngBytes,
-          originalFileName: 'photo.png',
+          bytes: Stream.value(pngBytes),
+          fileName: 'photo.png',
           metadataStore: metadataStore,
         );
 
-        final firstSecureFileName = result1.secureFileName;
-        final firstMetadata = metadataStore.findByOriginalName('photo.png');
+        final firstFileName = result1.fileName;
+        final firstMetadata = metadataStore.findByName('photo.png');
         final firstUploadTime = firstMetadata!.uploadedAt;
 
         // Wait a bit to ensure timestamp difference
@@ -91,16 +89,16 @@ void main() {
 
         // Second upload with same filename (even with different content)
         final result2 = await processImageUpload(
-          bytes: differentPngBytes,
-          originalFileName: 'photo.png',
+          bytes: Stream.value(differentPngBytes),
+          fileName: 'photo.png',
           metadataStore: metadataStore,
         );
 
         // Should return the same secure filename
-        expect(result2.secureFileName, equals(firstSecureFileName));
+        expect(result2.fileName, equals(firstFileName));
 
         // Metadata should be updated with new timestamp
-        final secondMetadata = metadataStore.findByOriginalName('photo.png');
+        final secondMetadata = metadataStore.findByName('photo.png');
         expect(secondMetadata, isNotNull);
         expect(
           secondMetadata!.uploadedAt.isAfter(firstUploadTime),
@@ -113,20 +111,20 @@ void main() {
     test('different filenames create different secure filenames', () async {
       // First upload
       final result1 = await processImageUpload(
-        bytes: pngBytes,
-        originalFileName: 'image1.png',
+        bytes: Stream.value(pngBytes),
+        fileName: 'image1.png',
         metadataStore: metadataStore,
       );
 
       // Second upload with different filename
       final result2 = await processImageUpload(
-        bytes: pngBytes,
-        originalFileName: 'image2.png',
+        bytes: Stream.value(pngBytes),
+        fileName: 'image2.png',
         metadataStore: metadataStore,
       );
 
-      // Should create different secure filenames
-      expect(result2.secureFileName, isNot(equals(result1.secureFileName)));
+      // Should create different filenames
+      expect(result2.fileName, isNot(equals(result1.fileName)));
     });
   });
 }

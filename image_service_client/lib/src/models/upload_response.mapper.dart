@@ -28,25 +28,17 @@ class UploadResponseMapper extends ClassMapperBase<UploadResponse> {
     'fileName',
     _$fileName,
   );
-  static String? _$originalName(UploadResponse v) => v.originalName;
-  static const Field<UploadResponse, String> _f$originalName = Field(
-    'originalName',
-    _$originalName,
-    opt: true,
-  );
 
   @override
   final MappableFields<UploadResponse> fields = const {
     #url: _f$url,
     #fileName: _f$fileName,
-    #originalName: _f$originalName,
   };
 
   static UploadResponse _instantiate(DecodingData data) {
     return UploadResponse(
       url: data.dec(_f$url),
       fileName: data.dec(_f$fileName),
-      originalName: data.dec(_f$originalName),
     );
   }
 
@@ -112,7 +104,7 @@ extension UploadResponseValueCopy<$R, $Out>
 
 abstract class UploadResponseCopyWith<$R, $In extends UploadResponse, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
-  $R call({String? url, String? fileName, String? originalName});
+  $R call({String? url, String? fileName});
   UploadResponseCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
   );
@@ -127,19 +119,16 @@ class _UploadResponseCopyWithImpl<$R, $Out>
   late final ClassMapperBase<UploadResponse> $mapper =
       UploadResponseMapper.ensureInitialized();
   @override
-  $R call({String? url, String? fileName, Object? originalName = $none}) =>
-      $apply(
-        FieldCopyWithData({
-          if (url != null) #url: url,
-          if (fileName != null) #fileName: fileName,
-          if (originalName != $none) #originalName: originalName,
-        }),
-      );
+  $R call({String? url, String? fileName}) => $apply(
+    FieldCopyWithData({
+      if (url != null) #url: url,
+      if (fileName != null) #fileName: fileName,
+    }),
+  );
   @override
   UploadResponse $make(CopyWithData data) => UploadResponse(
     url: data.get(#url, or: $value.url),
     fileName: data.get(#fileName, or: $value.fileName),
-    originalName: data.get(#originalName, or: $value.originalName),
   );
 
   @override

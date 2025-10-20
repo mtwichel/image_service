@@ -43,6 +43,8 @@ document.addEventListener('DOMContentLoaded', function () {
           document.getElementById('images-table').innerHTML = html;
           // Process HTMX attributes on the newly loaded content
           htmx.process(document.getElementById('images-table'));
+          // Setup filter after table is loaded
+          setTimeout(initializeFilter, 100);
         }
       })
       .catch(error => {
@@ -345,11 +347,11 @@ document.addEventListener('DOMContentLoaded', function () {
     let visibleCount = 0;
 
     rows.forEach(row => {
-      // Find the cell containing the original name (second cell in the row)
-      const originalNameCell = row.cells[1];
-      if (originalNameCell) {
-        const originalName = originalNameCell.textContent.toLowerCase();
-        const shouldShow = searchTerm === '' || originalName.includes(searchTerm);
+      // Find the cell containing the filename (second cell in the row)
+      const filenameCell = row.cells[1];
+      if (filenameCell) {
+        const filename = filenameCell.textContent.toLowerCase();
+        const shouldShow = searchTerm === '' || filename.includes(searchTerm);
 
         if (shouldShow) {
           row.style.display = '';
@@ -400,41 +402,6 @@ document.addEventListener('DOMContentLoaded', function () {
       filterInput.value = '';
     }
   }
-
-  // Setup filter after images are loaded
-  const originalFetchImagesTable = fetchImagesTable;
-  fetchImagesTable = function (apiKey) {
-    fetch('/dashboard/files', {
-      headers: {
-        'x-api-key': apiKey
-      }
-    })
-      .then(response => {
-        if (response.status === 401) {
-          // Clear invalid API key and prompt for new one
-          sessionStorage.removeItem('apiKey');
-          const tableDiv = document.getElementById('images-table');
-          tableDiv.innerHTML = '<div class="text-center py-8 text-red-600">Invalid API Key. Please try again.</div>';
-          setTimeout(() => {
-            loadImagesTable();
-          }, 1500);
-          return;
-        }
-        return response.text();
-      })
-      .then(html => {
-        if (html) {
-          document.getElementById('images-table').innerHTML = html;
-          // Process HTMX attributes on the newly loaded content
-          htmx.process(document.getElementById('images-table'));
-          // Setup filter after table is loaded
-          setTimeout(initializeFilter, 100);
-        }
-      })
-      .catch(error => {
-        document.getElementById('images-table').innerHTML = '<div class="text-center py-8 text-red-600">Failed to load images</div>';
-      });
-  };
 
   // Setup filter on HTMX content updates
   document.body.addEventListener('htmx:afterSwap', function (evt) {

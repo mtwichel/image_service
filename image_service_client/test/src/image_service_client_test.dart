@@ -133,60 +133,11 @@ void main() {
       });
     });
 
-    group('listImages', () {
-      test('lists all images', () async {
-        final jsonResponse = {
-          'images': [
-            {
-              'fileName': 'test1.jpg',
-              'originalName': 'photo1.jpg',
-              'url': 'http://localhost:8080/files/test1.jpg',
-              'size': 1024,
-            },
-            {
-              'fileName': 'test2.jpg',
-              'originalName': 'photo2.jpg',
-              'url': 'http://localhost:8080/files/test2.jpg',
-              'size': 2048,
-            },
-          ],
-        };
-
-        when(
-          () => mockClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(jsonEncode(jsonResponse), 200),
-        );
-
-        final result = await client.listImages();
-
-        expect(result, hasLength(2));
-        expect(result[0].fileName, equals('test1.jpg'));
-        expect(result[0].size, equals(1024));
-        expect(result[1].fileName, equals('test2.jpg'));
-        expect(result[1].size, equals(2048));
-      });
-
-      test('throws ImageServiceException on error', () async {
-        when(
-          () => mockClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('Unauthorized', 401),
-        );
-
-        expect(
-          () => client.listImages(),
-          throwsA(isA<ImageServiceException>()),
-        );
-      });
-    });
-
-    group('uploadImageFromUrl', () {
+    group('uploadImage', () {
       test('uploads image from URL successfully', () async {
         final jsonResponse = {
           'url': 'http://localhost:8080/files/123456_789.jpg',
           'fileName': '123456_789.jpg',
-          'originalName': 'photo.jpg',
         };
 
         when(
@@ -204,10 +155,9 @@ void main() {
         );
 
         expect(result.fileName, equals('123456_789.jpg'));
-        expect(result.originalName, equals('photo.jpg'));
         verify(
           () => mockClient.post(
-            Uri.parse('http://localhost:8080/files/upload-from-url'),
+            Uri.parse('http://localhost:8080/upload-from-url'),
             headers: {
               'x-api-key': 'test-api-key',
               'Content-Type': 'application/json',
@@ -221,7 +171,6 @@ void main() {
         final jsonResponse = {
           'url': 'http://localhost:8080/files/123456_789.png',
           'fileName': '123456_789.png',
-          'originalName': 'custom.png',
         };
 
         when(
@@ -240,10 +189,9 @@ void main() {
         );
 
         expect(result.fileName, equals('123456_789.png'));
-        expect(result.originalName, equals('custom.png'));
         verify(
           () => mockClient.post(
-            Uri.parse('http://localhost:8080/files/upload-from-url'),
+            Uri.parse('http://localhost:8080/upload-from-url'),
             headers: {
               'x-api-key': 'test-api-key',
               'Content-Type': 'application/json',
@@ -251,46 +199,6 @@ void main() {
             body: jsonEncode({
               'url': 'https://example.com/photo.jpg',
               'fileName': 'custom.png',
-            }),
-          ),
-        ).called(1);
-      });
-
-      test('uploads image from URL with bucket', () async {
-        final jsonResponse = {
-          'url': 'http://localhost:8080/files/avatars/123456_789.jpg',
-          'fileName': '123456_789.jpg',
-          'originalName': 'photo.jpg',
-          'bucket': 'avatars',
-        };
-
-        when(
-          () => mockClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer(
-          (_) async => http.Response(jsonEncode(jsonResponse), 201),
-        );
-
-        final result = await client.uploadImageFromUrl(
-          url: 'https://example.com/photo.jpg',
-          bucket: 'avatars',
-        );
-
-        expect(result.fileName, equals('123456_789.jpg'));
-        expect(result.originalName, equals('photo.jpg'));
-        verify(
-          () => mockClient.post(
-            Uri.parse('http://localhost:8080/files/upload-from-url'),
-            headers: {
-              'x-api-key': 'test-api-key',
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode({
-              'url': 'https://example.com/photo.jpg',
-              'bucket': 'avatars',
             }),
           ),
         ).called(1);
