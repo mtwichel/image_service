@@ -180,5 +180,181 @@ void main() {
         );
       });
     });
+
+    group('uploadImageFromUrl', () {
+      test('uploads image from URL successfully', () async {
+        final jsonResponse = {
+          'url': 'http://localhost:8080/files/123456_789.jpg',
+          'fileName': '123456_789.jpg',
+          'originalName': 'photo.jpg',
+        };
+
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(jsonEncode(jsonResponse), 201),
+        );
+
+        final result = await client.uploadImageFromUrl(
+          url: 'https://example.com/photo.jpg',
+        );
+
+        expect(result.fileName, equals('123456_789.jpg'));
+        expect(result.originalName, equals('photo.jpg'));
+        verify(
+          () => mockClient.post(
+            Uri.parse('http://localhost:8080/files/upload-from-url'),
+            headers: {
+              'x-api-key': 'test-api-key',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'url': 'https://example.com/photo.jpg'}),
+          ),
+        ).called(1);
+      });
+
+      test('uploads image from URL with custom filename', () async {
+        final jsonResponse = {
+          'url': 'http://localhost:8080/files/123456_789.png',
+          'fileName': '123456_789.png',
+          'originalName': 'custom.png',
+        };
+
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(jsonEncode(jsonResponse), 201),
+        );
+
+        final result = await client.uploadImageFromUrl(
+          url: 'https://example.com/photo.jpg',
+          fileName: 'custom.png',
+        );
+
+        expect(result.fileName, equals('123456_789.png'));
+        expect(result.originalName, equals('custom.png'));
+        verify(
+          () => mockClient.post(
+            Uri.parse('http://localhost:8080/files/upload-from-url'),
+            headers: {
+              'x-api-key': 'test-api-key',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'url': 'https://example.com/photo.jpg',
+              'fileName': 'custom.png',
+            }),
+          ),
+        ).called(1);
+      });
+
+      test('uploads image from URL with bucket', () async {
+        final jsonResponse = {
+          'url': 'http://localhost:8080/files/avatars/123456_789.jpg',
+          'fileName': '123456_789.jpg',
+          'originalName': 'photo.jpg',
+          'bucket': 'avatars',
+        };
+
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(jsonEncode(jsonResponse), 201),
+        );
+
+        final result = await client.uploadImageFromUrl(
+          url: 'https://example.com/photo.jpg',
+          bucket: 'avatars',
+        );
+
+        expect(result.fileName, equals('123456_789.jpg'));
+        expect(result.originalName, equals('photo.jpg'));
+        verify(
+          () => mockClient.post(
+            Uri.parse('http://localhost:8080/files/upload-from-url'),
+            headers: {
+              'x-api-key': 'test-api-key',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'url': 'https://example.com/photo.jpg',
+              'bucket': 'avatars',
+            }),
+          ),
+        ).called(1);
+      });
+
+      test('throws ImageServiceException on invalid URL', () async {
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response('Invalid URL format', 400),
+        );
+
+        expect(
+          () => client.uploadImageFromUrl(
+            url: 'not-a-valid-url',
+          ),
+          throwsA(isA<ImageServiceException>()),
+        );
+      });
+
+      test('throws ImageServiceException on fetch failure', () async {
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            'Failed to fetch image from URL: HTTP 404',
+            400,
+          ),
+        );
+
+        expect(
+          () => client.uploadImageFromUrl(
+            url: 'https://example.com/missing.jpg',
+          ),
+          throwsA(isA<ImageServiceException>()),
+        );
+      });
+
+      test('throws ImageServiceException on unauthorized', () async {
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response('Unauthorized', 401),
+        );
+
+        expect(
+          () => client.uploadImageFromUrl(
+            url: 'https://example.com/photo.jpg',
+          ),
+          throwsA(isA<ImageServiceException>()),
+        );
+      });
+    });
   });
 }
