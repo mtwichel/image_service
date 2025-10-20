@@ -15,17 +15,16 @@ Future<void> main() async {
 
   try {
     print('=== Image Service Client Example ===\n');
-
-    // Example 1: Upload an image using multipart form
-    print('1. Uploading image via multipart form...');
     final imageBytes = await _createSampleImage();
-    final uploadResponse = await client.uploadImage(
+
+    // Example 1: Basic image upload
+    print('1. Uploading image...');
+    final uploadResponse = await client.uploadImageWithFilename(
       imageBytes: imageBytes,
-      fileName: 'example-photo.jpg',
+      fileName: 'example-image.jpg',
+      contentType: 'image/jpeg',
     );
-    print('   Uploaded: ${uploadResponse.url}');
-    print('   File name: ${uploadResponse.fileName}');
-    print('   Original name: ${uploadResponse.originalName}\n');
+    print('   Uploaded: ${uploadResponse.url}\n');
 
     // Example 2: Upload with custom filename
     print('2. Uploading with custom filename...');

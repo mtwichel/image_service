@@ -27,7 +27,19 @@ Future<Response> _onPut(RequestContext context, String fileName) async {
   }
   final file = File('${directory.path}/$fileName');
   await file.openWrite().addStream(bytesStream);
-  return Response(statusCode: HttpStatus.created);
+
+  // Construct response matching UploadResponse format
+  final baseUrl = Platform.environment['BASE_URL'];
+  final url = baseUrl != null ? '$baseUrl/files/$fileName' : '/files/$fileName';
+
+  return Response.json(
+    body: {
+      'url': url,
+      'fileName': fileName,
+      'originalName': fileName, // No original name tracking for direct PUT
+    },
+    statusCode: HttpStatus.created,
+  );
 }
 
 Future<Response> _onGet(RequestContext context, String fileName) async {

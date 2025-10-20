@@ -35,51 +35,6 @@ class ImageServiceClient {
     'x-api-key': apiKey,
   };
 
-  /// Uploads an image file using multipart form data (POST)
-  ///
-  /// [imageBytes] - The image file bytes
-  /// [fileName] - Optional original filename (with extension)
-  /// [bucket] - Optional bucket name for organizing images
-  ///
-  /// Returns [UploadResponse] with the URL and metadata
-  ///
-  /// Throws [ImageServiceException] on failure
-  Future<UploadResponse> uploadImage({
-    required Uint8List imageBytes,
-    String? fileName,
-    String? bucket,
-  }) async {
-    var uri = Uri.parse('$baseUrl/files');
-
-    // Add bucket as query parameter if provided
-    if (bucket != null && bucket.isNotEmpty) {
-      uri = uri.replace(queryParameters: {'bucket': bucket});
-    }
-
-    final request = http.MultipartRequest('POST', uri)
-      ..headers.addAll(_authHeaders)
-      ..files.add(
-        http.MultipartFile.fromBytes(
-          'file',
-          imageBytes,
-          filename: fileName,
-        ),
-      );
-
-    final streamedResponse = await _httpClient.send(request);
-    final response = await http.Response.fromStream(streamedResponse);
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      return UploadResponse.fromMap(json);
-    }
-
-    throw ImageServiceException(
-      statusCode: response.statusCode,
-      message: response.body,
-    );
-  }
-
   /// Uploads an image with a custom filename using PUT
   ///
   /// [imageBytes] - The image file bytes
@@ -134,25 +89,9 @@ class ImageServiceClient {
     ImageTransformOptions? transform,
     String? bucket,
   }) async {
-    String path;
-
-    if (bucket != null && bucket.isNotEmpty) {
-      if (transform != null && transform.hasTransformations) {
-        final properties = transform.toPropertiesString();
-        path = '/files/$bucket/$properties/$fileName';
-      } else {
-        path = '/files/$bucket/$fileName';
-      }
-    } else {
-      if (transform != null && transform.hasTransformations) {
-        final properties = transform.toPropertiesString();
-        path = '/files/$properties/$fileName';
-      } else {
-        path = '/files/$fileName';
-      }
-    }
-
-    final uri = Uri.parse('$baseUrl$path');
+    final uri = Uri.parse(
+      getImageUrl(fileName, transform: transform, bucket: bucket),
+    );
     final response = await _httpClient.get(uri);
 
     if (response.statusCode == 200) {

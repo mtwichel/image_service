@@ -5,6 +5,21 @@ All notable changes to the Image Service Client will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.1-dev.3] - 2025-10-20
+
+### Changed
+
+- **BREAKING**: Removed `uploadImage()` method (multipart POST)
+  - Use `uploadImageWithFilename()` (PUT) or `uploadImageWithToken()` (POST with token) instead
+  - This simplifies the API surface and aligns with the server's recommended upload patterns
+- Refactored `getImage()` to use `getImageUrl()` internally, reducing code duplication
+
+### Fixed
+
+- Fixed missing Example 1 in example.dart that was causing undefined variable errors
+  - Added basic image upload example that defines `uploadResponse` variable
+  - All examples now execute correctly without errors
+
 ## [0.0.1-dev.2] - 2025-10-11
 
 ### Added
@@ -53,5 +68,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - API key authentication via x-api-key header
 - Support for custom HTTP client for testing and proxy configurations
 
+[0.0.1-dev.3]: https://github.com/mtwichel/image_service/compare/v0.0.1-dev.2...v0.0.1-dev.3
 [0.0.1-dev.2]: https://github.com/mtwichel/image_service/compare/v0.0.1-dev.1...v0.0.1-dev.2
 [0.0.1-dev.1]: https://github.com/mtwichel/image_service/releases/tag/v0.0.1-dev.1
