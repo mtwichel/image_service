@@ -241,7 +241,7 @@ class ImageServiceClient {
   ///
   /// Throws [ImageServiceException] on failure
   Future<TemporaryUploadUrl> createTemporaryUploadUrl({String? bucket}) async {
-    var uri = Uri.parse('$baseUrl/upload_tokens');
+    var uri = Uri.parse('$baseUrl/files/upload-tokens');
 
     // Add bucket as query parameter if provided
     if (bucket != null && bucket.isNotEmpty) {
@@ -281,7 +281,7 @@ class ImageServiceClient {
     required Uint8List imageBytes,
     String? fileName,
   }) async {
-    final uri = Uri.parse('$baseUrl/upload_tokens/$token');
+    final uri = Uri.parse('$baseUrl/files/upload-tokens/$token');
     final request = http.MultipartRequest('POST', uri)
       ..files.add(
         http.MultipartFile.fromBytes(
