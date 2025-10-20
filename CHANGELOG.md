@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.1-dev.4] - 2025-10-20
+
+### Added
+
+#### Server
+
+- **Upload from URL**: New endpoint to upload images from public URLs
+  - `POST /files/upload-from-url` - Fetch and store images from public URLs (requires API key)
+  - Accepts JSON body with `url` (required), `fileName` (optional), and `bucket` (optional) parameters
+  - 10-second timeout for fetching remote images
+  - Validates URL format (must be http/https)
+  - Returns 400 Bad Request on invalid or unreachable URLs
+  - Extracts filename from URL path if not provided
+  - Uses existing `processImageUpload()` for consistent validation and storage
+  - Supports organizing images by bucket
+- Added `http` package dependency for URL fetching
+
+### Changed
+
+#### Server
+
+- **Refactored upload tokens endpoints**: Moved from `/upload_tokens` to `/files/upload-tokens`
+  - `POST /files/upload-tokens` - Create temporary upload token (was `/upload_tokens`)
+  - `POST /files/upload-tokens/{token}` - Upload with token (was `/upload_tokens/{token}`)
+  - Improves API consistency by grouping all file-related endpoints under `/files`
+  - No functional changes, only path reorganization
+
 ## [0.0.1-dev.3] - 2025-10-20
 
 ### Fixed
@@ -149,6 +176,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIME type detection with `package:mime`
 - HTML generation with `dart_frog_html`
 
+[0.0.1-dev.4]: https://github.com/mtwichel/image_service/compare/v0.0.1-dev.3...v0.0.1-dev.4
 [0.0.1-dev.3]: https://github.com/mtwichel/image_service/compare/v0.0.1-dev.2...v0.0.1-dev.3
 [0.0.1-dev.2]: https://github.com/mtwichel/image_service/compare/v0.0.1-dev.1...v0.0.1-dev.2
 [0.0.1-dev.1]: https://github.com/mtwichel/image_service/releases/tag/v0.0.1-dev.1

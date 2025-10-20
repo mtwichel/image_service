@@ -5,6 +5,28 @@ All notable changes to the Image Service Client will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.1-dev.4] - 2025-10-20
+
+### Added
+
+- **Upload from URL**: New method to upload images from public URLs
+  - `uploadImageFromUrl()` - Fetch and store images from public URLs (requires API key)
+  - Parameters: `url` (required), `fileName` (optional), `bucket` (optional)
+  - Server fetches the image with 10-second timeout
+  - Returns `UploadResponse` with URL and metadata
+  - Throws `ImageServiceException` on errors (invalid URL, fetch failure, etc.)
+- Updated README with upload from URL documentation and examples
+- Added upload from URL example to example.dart
+- Added 6 comprehensive test cases for upload from URL functionality
+
+### Changed
+
+- **Updated endpoint paths for temporary upload tokens**
+  - `createTemporaryUploadUrl()` now uses `/files/upload-tokens` (was `/upload_tokens`)
+  - `uploadImageWithToken()` now uses `/files/upload-tokens/{token}` (was `/upload_tokens/{token}`)
+  - Aligns with server refactoring for better API consistency
+  - No functional changes, only path updates
+
 ## [0.0.1-dev.3] - 2025-10-20
 
 ### Changed
@@ -68,6 +90,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - API key authentication via x-api-key header
 - Support for custom HTTP client for testing and proxy configurations
 
+[0.0.1-dev.4]: https://github.com/mtwichel/image_service/compare/v0.0.1-dev.3...v0.0.1-dev.4
 [0.0.1-dev.3]: https://github.com/mtwichel/image_service/compare/v0.0.1-dev.2...v0.0.1-dev.3
 [0.0.1-dev.2]: https://github.com/mtwichel/image_service/compare/v0.0.1-dev.1...v0.0.1-dev.2
 [0.0.1-dev.1]: https://github.com/mtwichel/image_service/releases/tag/v0.0.1-dev.1
