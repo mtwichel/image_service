@@ -8,6 +8,7 @@ A Dart client library for interacting with the Image Service server. Provides a 
 ## Features
 
 - 📤 **Upload Images** - Multipart form upload or binary PUT with custom filename
+- 🌐 **Upload from URL** - Fetch and store images from public URLs
 - ⏰ **Temporary Upload URLs** - Generate secure, single-use tokens for client-side uploads
 - 📥 **Retrieve Images** - Get original or transformed versions
 - 🎨 **Transform Images** - On-the-fly resizing and quality adjustment
@@ -95,6 +96,45 @@ print('Uploaded: ${response.url}');
 - Expires after 15 minutes
 - Cryptographically secure (32 random bytes)
 - Perfect for client-side uploads without exposing API keys
+
+**Upload from a public URL:**
+
+You can also upload images directly from a public URL. The server will fetch the image and store it for you.
+
+```dart
+// Upload from URL (requires API key)
+final response = await client.uploadImageFromUrl(
+  url: 'https://example.com/image.jpg',
+);
+
+print('Uploaded: ${response.url}');
+```
+
+**With custom filename:**
+
+```dart
+final response = await client.uploadImageFromUrl(
+  url: 'https://example.com/image.jpg',
+  fileName: 'my-custom-name.jpg',
+);
+```
+
+**With bucket:**
+
+```dart
+final response = await client.uploadImageFromUrl(
+  url: 'https://example.com/image.jpg',
+  bucket: 'avatars',
+);
+```
+
+**Features:**
+
+- Requires API key authentication
+- 10 second timeout for fetching the image
+- Returns 400 Bad Request if URL is invalid or unreachable
+- Supports optional custom filename and bucket parameters
+- Filename is extracted from URL if not provided
 
 ### Retrieve an Image
 
@@ -195,15 +235,18 @@ Main client class for interacting with the Image Service.
 
 **Methods:**
 
-| Method                      | Description                     | Returns               |
-| --------------------------- | ------------------------------- | --------------------- |
-| `uploadImage()`             | Upload image via multipart form | `UploadResponse`      |
-| `uploadImageWithFilename()` | Upload with custom filename     | `UploadResponse`      |
-| `getImage()`                | Retrieve image bytes            | `Uint8List`           |
-| `getImageUrl()`             | Get image URL                   | `String`              |
-| `deleteImage()`             | Delete an image                 | `bool`                |
-| `listImages()`              | List all images                 | `List<ImageMetadata>` |
-| `dispose()`                 | Close HTTP client               | `void`                |
+| Method                       | Description                     | Returns               |
+| ---------------------------- | ------------------------------- | --------------------- |
+| `uploadImage()`              | Upload image via multipart form | `UploadResponse`      |
+| `uploadImageWithFilename()`  | Upload with custom filename     | `UploadResponse`      |
+| `uploadImageFromUrl()`       | Upload image from public URL    | `UploadResponse`      |
+| `createTemporaryUploadUrl()` | Create single-use upload token  | `TemporaryUploadUrl`  |
+| `uploadImageWithToken()`     | Upload using temporary token    | `UploadResponse`      |
+| `getImage()`                 | Retrieve image bytes            | `Uint8List`           |
+| `getImageUrl()`              | Get image URL                   | `String`              |
+| `deleteImage()`              | Delete an image                 | `bool`                |
+| `listImages()`               | List all images                 | `List<ImageMetadata>` |
+| `dispose()`                  | Close HTTP client               | `void`                |
 
 ### ImageTransformOptions
 

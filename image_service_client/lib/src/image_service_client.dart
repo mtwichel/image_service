@@ -75,6 +75,51 @@ class ImageServiceClient {
     );
   }
 
+  /// Uploads an image from a public URL
+  ///
+  /// The server will fetch the image from the provided URL and store it.
+  /// Requires API key authentication.
+  ///
+  /// [url] - The public URL of the image to upload
+  /// [fileName] - Optional custom filename (if not provided, extracted from
+  /// URL)
+  /// [bucket] - Optional bucket name for organizing images
+  ///
+  /// Returns [UploadResponse] with the URL and metadata
+  ///
+  /// Throws [ImageServiceException] on failure (invalid URL, fetch error, etc.)
+  Future<UploadResponse> uploadImageFromUrl({
+    required String url,
+    String? fileName,
+    String? bucket,
+  }) async {
+    final uri = Uri.parse('$baseUrl/files/upload-from-url');
+    final body = <String, dynamic>{
+      'url': url,
+      if (fileName != null && fileName.isNotEmpty) 'fileName': fileName,
+      if (bucket != null && bucket.isNotEmpty) 'bucket': bucket,
+    };
+
+    final response = await _httpClient.post(
+      uri,
+      headers: {
+        ..._authHeaders,
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return UploadResponse.fromMap(json);
+    }
+
+    throw ImageServiceException(
+      statusCode: response.statusCode,
+      message: response.body,
+    );
+  }
+
   /// Retrieves an image by filename
   ///
   /// [fileName] - The filename of the image

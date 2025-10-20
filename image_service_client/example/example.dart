@@ -91,15 +91,28 @@ Future<void> main() async {
     print('   Uploaded: ${tokenUpload.url}');
     print('   File name: ${tokenUpload.fileName}\n');
 
-    // Example 9: Delete images
-    print('9. Deleting images...');
+    // Example 9: Upload from public URL
+    print('9. Uploading from URL...');
+    try {
+      final urlUpload = await client.uploadImageFromUrl(
+        url: 'https://picsum.photos/200/300',
+        fileName: 'url-upload-example.jpg',
+      );
+      print('   Uploaded: ${urlUpload.url}');
+      print('   File name: ${urlUpload.fileName}\n');
+    } catch (e) {
+      print('   Failed to upload from URL (this is okay if no internet): $e\n');
+    }
+
+    // Example 10: Delete images
+    print('10. Deleting images...');
     await client.deleteImage(uploadResponse.fileName);
     print('   Deleted: ${uploadResponse.fileName}');
     await client.deleteImage(tokenUpload.fileName);
     print('   Deleted: ${tokenUpload.fileName}\n');
 
-    // Example 10: Error handling
-    print('10. Error handling example...');
+    // Example 11: Error handling
+    print('11. Error handling example...');
     try {
       await client.getImage('non-existent-file.jpg');
     } on ImageServiceException catch (e) {
