@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.1-dev.3] - 2025-10-20
+
+### Fixed
+
+#### Server
+
+- `PUT /files/{fileName}` now returns proper `UploadResponse` JSON format
+  - Returns `{ url, fileName, originalName }` matching client expectations
+- `PUT /files/{bucket}/{fileName}` now returns proper `UploadResponse` JSON format with bucket support
+  - Returns `{ url, fileName, originalName }` matching client expectations
+- All upload endpoints now return consistent JSON responses matching the client library models
+
 ## [0.0.1-dev.2] - 2025-10-11
 
 ### Added
@@ -137,5 +149,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MIME type detection with `package:mime`
 - HTML generation with `dart_frog_html`
 
+[0.0.1-dev.3]: https://github.com/mtwichel/image_service/compare/v0.0.1-dev.2...v0.0.1-dev.3
 [0.0.1-dev.2]: https://github.com/mtwichel/image_service/compare/v0.0.1-dev.1...v0.0.1-dev.2
 [0.0.1-dev.1]: https://github.com/mtwichel/image_service/releases/tag/v0.0.1-dev.1
