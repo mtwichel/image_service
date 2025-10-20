@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Fetch and display images table
   function fetchImagesTable(apiKey) {
-    fetch('/files', {
+    fetch('/dashboard/files', {
       headers: {
         'x-api-key': apiKey
       }
@@ -404,7 +404,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Setup filter after images are loaded
   const originalFetchImagesTable = fetchImagesTable;
   fetchImagesTable = function (apiKey) {
-    fetch('/files', {
+    fetch('/dashboard/files', {
       headers: {
         'x-api-key': apiKey
       }

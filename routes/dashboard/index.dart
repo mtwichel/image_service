@@ -53,7 +53,7 @@ Future<Response> onRequest(RequestContext context) async {
                       className:
                           'mb-8 p-6 bg-white rounded-lg border border-gray-200 shadow-sm',
                       attributes: {
-                        'hx-post': '/files',
+                        'hx-post': '/dashboard/files',
                         'hx-encoding': 'multipart/form-data',
                         'hx-target': '#table-body',
                         'hx-swap': 'afterbegin',
