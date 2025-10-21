@@ -17,7 +17,7 @@ class ImageServiceClient {
   /// {@macro image_service_client}
   ImageServiceClient({
     required this.baseUrl,
-    required this.apiKey,
+    this.apiKey,
     http.Client? httpClient,
   }) : _httpClient = httpClient ?? http.Client();
 
@@ -25,14 +25,14 @@ class ImageServiceClient {
   final String baseUrl;
 
   /// API key for authentication (x-api-key header)
-  final String apiKey;
+  final String? apiKey;
 
   /// HTTP client for making requests
   final http.Client _httpClient;
 
   /// Headers for authenticated requests
   Map<String, String> get _authHeaders => {
-    'x-api-key': apiKey,
+    'x-api-key': ?apiKey,
   };
 
   /// Uploads an image with a custom filename using PUT
@@ -230,7 +230,7 @@ class ImageServiceClient {
     final uri = Uri.parse('$baseUrl/upload-tokens/$token');
     final request = http.MultipartRequest('POST', uri)
       ..files.add(
-        http.MultipartFile.fromBytes('file', imageBytes),
+        http.MultipartFile.fromBytes('file', imageBytes, filename: 'file'),
       );
 
     final streamedResponse = await _httpClient.send(request);
