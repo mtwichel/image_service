@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.1-dev.6]
+
+### Changed
+
+#### Server
+
+- **Image transformation encoding**: Image transformation endpoint now encodes images based on file extension
+  - `GET /files/{propertiesString}/{fileName}` now preserves original image format during transformation
+  - JPEG files (`.jpg`, `.jpeg`) are encoded as JPEG with quality parameter
+  - PNG files (`.png`) are encoded as PNG (lossless)
+  - GIF files (`.gif`) are encoded as GIF
+  - Unknown extensions default to JPEG encoding
+  - Content-Type header now matches the encoded format
+  - Previously all transformed images were always encoded as JPEG regardless of source format
+
 ## [0.0.1-dev.5] - 2025-10-20
 
 ### Changed
